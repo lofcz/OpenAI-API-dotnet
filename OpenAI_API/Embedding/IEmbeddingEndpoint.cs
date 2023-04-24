@@ -41,5 +41,12 @@ namespace OpenAI_API.Embedding
         /// <param name="input">Text to be embedded</param>
         /// <returns>Asynchronously returns the first embedding result as an array of floats.</returns>
         Task<float[]> GetEmbeddingsAsync(string input);
+        
+        /// <summary>
+        /// Ask the API to embedd text using the default embedding model <see cref="Model.AdaTextEmbedding"/>
+        /// </summary>
+        /// <param name="input">Text to be embedded</param>
+        /// <returns>Asynchronously returns the first embedding result as an array of floats.</returns>
+        Task<List<float[]>> GetEmbeddingsAsync(IEnumerable<string> input);
     }
 }
