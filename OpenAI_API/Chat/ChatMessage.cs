@@ -15,7 +15,8 @@ namespace OpenAI_API.Chat
 		/// </summary>
 		public ChatMessage()
 		{
-			this.Role = ChatMessageRole.User;
+			Role = ChatMessageRole.User;
+			Id = Guid.NewGuid();
 		}
 
 		/// <summary>
@@ -25,8 +26,22 @@ namespace OpenAI_API.Chat
 		/// <param name="content">The text to send in the message</param>
 		public ChatMessage(ChatMessageRole role, string content)
 		{
-			this.Role = role;
-			this.Content = content;
+			Role = role;
+			Content = content;
+			Id = Guid.NewGuid();
+		}
+		
+		/// <summary>
+		/// Constructor for a new Chat Message
+		/// </summary>
+		/// <param name="role">The role of the message, which can be "system", "assistant" or "user"</param>
+		/// <param name="content">The text to send in the message</param>
+		/// <param name="id">Unique guid acting as an identifier. If null, assigned automatically.</param>
+		public ChatMessage(ChatMessageRole role, string content, Guid? id)
+		{
+			Role = role;
+			Content = content;
+			Id = id ?? Guid.NewGuid();
 		}
 
 		[JsonProperty("role")]
@@ -38,14 +53,8 @@ namespace OpenAI_API.Chat
 		[JsonIgnore]
 		public ChatMessageRole Role
 		{
-			get
-			{
-				return ChatMessageRole.FromString(rawRole);
-			}
-			set
-			{
-				rawRole = value.ToString();
-			}
+			get => ChatMessageRole.FromString(rawRole);
+			set => rawRole = value.ToString();
 		}
 
 		/// <summary>
@@ -59,5 +68,11 @@ namespace OpenAI_API.Chat
 		/// </summary>
 		[JsonProperty("name")]
 		public string Name { get; set; }
+		
+		/// <summary>
+		/// Assigned in ctor. Use to remove / update messages from conversation.s
+		/// </summary>
+		[JsonIgnore]
+		public Guid Id { get; }
 	}
 }

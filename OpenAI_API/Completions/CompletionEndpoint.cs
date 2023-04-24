@@ -19,7 +19,7 @@ namespace OpenAI_API.Completions
 		/// <summary>
 		/// The name of the endpoint, which is the final path segment in the API URL.  For example, "completions".
 		/// </summary>
-		protected override string Endpoint { get { return "completions"; } }
+		protected override string Endpoint => "completions";
 
 		/// <summary>
 		/// Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of <see cref="OpenAIAPI"/> as <see cref="OpenAIAPI.Completions"/>.

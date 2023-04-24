@@ -4,7 +4,7 @@
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<LangVersion>8.0</LangVersion>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Authors>OkGoDoIt (Roger Pincombe)</Authors>
+		<Authors>OkGoDoIt (Roger Pincombe), Matěj Štágl</Authors>
 		<Product>OpenAI API</Product>
 		<Description>A simple C# / .NET library to use with OpenAI's GPT-3 API, as well as ChatGPT, GPT-4, DALL·E, etc.  Independently developed, this is not an official library and I am not affiliated with OpenAI.  An OpenAI or Azure OpenAI account is required.</Description>
 		<Copyright>This library is licensed CC-0, in the public domain</Copyright>
@@ -16,8 +16,8 @@
 		<PackageReleaseNotes>
 			Added support for GPT4, streaming conversations with ChatGPT, IHttpClientFactory, and various bug fixes.
 		</PackageReleaseNotes>
-		<PackageId>OpenAI</PackageId>
-		<Version>1.7.2</Version>
+		<PackageId>Lofcz.Forks.OpenAI</PackageId>
+		<Version>1.7.8</Version>
 		<AssemblyVersion>1.7.2.0</AssemblyVersion>
 		<FileVersion>1.7.2.0</FileVersion>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>

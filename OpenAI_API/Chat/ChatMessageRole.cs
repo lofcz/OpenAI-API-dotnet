@@ -24,17 +24,13 @@ namespace OpenAI_API.Chat
 		/// <returns></returns>
 		public static ChatMessageRole FromString(string roleName)
 		{
-			switch (roleName)
+			return roleName switch
 			{
-				case "system":
-					return ChatMessageRole.System;
-				case "user":
-					return ChatMessageRole.User;
-				case "assistant":
-					return ChatMessageRole.Assistant;
-				default:
-					return null;
-			}
+				"system" => ChatMessageRole.System,
+				"user" => ChatMessageRole.User,
+				"assistant" => ChatMessageRole.Assistant,
+				_ => null
+			};
 		}
 
 		private string Value { get; }
@@ -68,7 +64,7 @@ namespace OpenAI_API.Chat
 		/// <returns>true if obj is a ChatMessageRole and its value is the same as this instance; otherwise, false. If obj is null, the method returns false</returns>
 		public override bool Equals(object obj)
 		{
-			return Value.Equals((obj as ChatMessageRole).Value);
+			return Value.Equals((obj as ChatMessageRole)?.Value);
 		}
 
 		/// <summary>
@@ -87,14 +83,14 @@ namespace OpenAI_API.Chat
 		/// <returns>true if other's value is the same as this instance; otherwise, false. If other is null, the method returns false</returns>
 		public bool Equals(ChatMessageRole other)
 		{
-			return Value.Equals(other.Value);
+			return other != null && Value.Equals(other.Value);
 		}
 
 		/// <summary>
 		/// Gets the string value for this role to pass to the API
 		/// </summary>
 		/// <param name="value">The ChatMessageRole to convert</param>
-		public static implicit operator String(ChatMessageRole value) { return value.Value; }
+		public static implicit operator string(ChatMessageRole value) { return value.Value; }
 
 		///// <summary>
 		///// Used during the Json serialization process

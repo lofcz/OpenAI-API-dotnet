@@ -17,7 +17,7 @@ namespace OpenAI_API.Chat
 		/// <summary>
 		/// An internal reference to the API endpoint, needed for API requests
 		/// </summary>
-		private ChatEndpoint _endpoint;
+		private readonly ChatEndpoint _endpoint;
 
 		/// <summary>
 		/// Allows setting the parameters to use when calling the ChatGPT API.  Can be useful for setting temperature, presence_penalty, and more.  <see href="https://platform.openai.com/docs/api-reference/chat/create">Se  OpenAI documentation for a list of possible parameters to tweak.</see>
@@ -27,16 +27,10 @@ namespace OpenAI_API.Chat
 		/// <summary>
 		/// Specifies the model to use for ChatGPT requests.  This is just a shorthand to access <see cref="RequestParameters"/>.Model
 		/// </summary>
-		public OpenAI_API.Models.Model Model
+		public Models.Model Model
 		{
-			get
-			{
-				return RequestParameters.Model;
-			}
-			set
-			{
-				RequestParameters.Model = value;
-			}
+			get => RequestParameters.Model;
+			set => RequestParameters.Model = value;
 		}
 
 		/// <summary>
@@ -50,13 +44,12 @@ namespace OpenAI_API.Chat
 		/// <param name="endpoint">A reference to the API endpoint, needed for API requests.  Generally should be <see cref="OpenAIAPI.Chat"/>.</param>
 		/// <param name="model">Optionally specify the model to use for ChatGPT requests.  If not specified, used <paramref name="defaultChatRequestArgs"/>.Model or falls back to <see cref="OpenAI_API.Models.Model.ChatGPTTurbo"/></param>
 		/// <param name="defaultChatRequestArgs">Allows setting the parameters to use when calling the ChatGPT API.  Can be useful for setting temperature, presence_penalty, and more.  See <see href="https://platform.openai.com/docs/api-reference/chat/create">OpenAI documentation for a list of possible parameters to tweak.</see></param>
-		public Conversation(ChatEndpoint endpoint, OpenAI_API.Models.Model model = null, ChatRequest defaultChatRequestArgs = null)
+		public Conversation(ChatEndpoint endpoint, Models.Model model = null, ChatRequest defaultChatRequestArgs = null)
 		{
 			RequestParameters = new ChatRequest(defaultChatRequestArgs);
 			if (model != null)
 				RequestParameters.Model = model;
-			if (RequestParameters.Model == null)
-				RequestParameters.Model = Models.Model.ChatGPTTurbo;
+			RequestParameters.Model ??= Models.Model.ChatGPTTurbo;
 
 			_Messages = new List<ChatMessage>();
 			_endpoint = endpoint;
@@ -67,7 +60,8 @@ namespace OpenAI_API.Chat
 		/// <summary>
 		/// A list of messages exchanged so far.  Do not modify this list directly.  Instead, use <see cref="AppendMessage(ChatMessage)"/>, <see cref="AppendUserInput(string)"/>, <see cref="AppendSystemMessage(string)"/>, or <see cref="AppendExampleChatbotOutput(string)"/>.
 		/// </summary>
-		public IReadOnlyList<ChatMessage> Messages { get => _Messages; }
+		public IReadOnlyList<ChatMessage> Messages => _Messages.ToList();
+
 		private List<ChatMessage> _Messages;
 
 		/// <summary>
@@ -78,38 +72,186 @@ namespace OpenAI_API.Chat
 		{
 			_Messages.Add(message);
 		}
+		
+		/// <summary>
+		/// Appends a <see cref="ChatMessage"/> to the chat hstory
+		/// </summary>
+		/// <param name="message">The <see cref="ChatMessage"/> to append to the chat history</param>
+		/// <param name="position">Zero-based index at which to insert the message</param>
+		public void AppendMessage(ChatMessage message, int position)
+		{
+			_Messages.Insert(position, message);
+		}
+
+		/// <summary>
+		/// Removes given message from the conversation. If the message is not found, nothing happens
+		/// </summary>
+		/// <param name="message"></param>
+		/// <returns>Whether message was removed</returns>
+		public bool RemoveMessage(ChatMessage message)
+		{
+			ChatMessage msg = _Messages.FirstOrDefault(x => x.Id == message.Id);
+			
+			if (msg != null)
+			{
+				_Messages.Remove(msg);
+				return true;
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// Removes message with given id from the conversation. If the message is not found, nothing happens
+		/// </summary>
+		/// <param name="id"></param>
+		/// <returns>Whether message was removed</returns>
+		public bool RemoveMessage(Guid id)
+		{
+			ChatMessage msg = _Messages.FirstOrDefault(x => x.Id == id);
+			
+			if (msg != null)
+			{
+				_Messages.Remove(msg);
+				return true;
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// Updates text of a given message
+		/// </summary>
+		/// <param name="message">Message to update</param>
+		/// <param name="content">New text</param>
+		public void EditMessageContent(ChatMessage message, string content)
+		{
+			message.Content = content;
+		}
+		
+		/// <summary>
+		/// Finds a message in the conversation by id. If found, updates text of this message
+		/// </summary>
+		/// <param name="id">Message to update</param>
+		/// <param name="content">New text</param>
+		/// <returns>Whether message was updated</returns>
+		public bool EditMessageContent(Guid id, string content)
+		{
+			ChatMessage msg = _Messages.FirstOrDefault(x => x.Id == id);
+			
+			if (msg != null)
+			{
+				msg.Content = content;
+				return true;
+			}
+
+			return false;
+		}
+		
+		/// <summary>
+		/// Updates role of a given message
+		/// </summary>
+		/// <param name="message">Message to update</param>
+		/// <param name="role">New role</param>
+		public void EditMessageRole(ChatMessage message, ChatMessageRole role)
+		{
+			message.Role = role;
+		}
+		
+		/// <summary>
+		/// Finds a message in the conversation by id. If found, updates text of this message
+		/// </summary>
+		/// <param name="id">Message to update</param>
+		/// <param name="role">New role</param>
+		/// <returns>Whether message was updated</returns>
+		public bool EditMessageRole(Guid id, ChatMessageRole role)
+		{
+			ChatMessage msg = _Messages.FirstOrDefault(x => x.Id == id);
+			
+			if (msg != null)
+			{
+				msg.Role = role;
+				return true;
+			}
+
+			return false;
+		}
 
 		/// <summary>
 		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory
 		/// </summary>
 		/// <param name="role">The <see cref="ChatMessageRole"/> for the message.  Typically, a conversation is formatted with a system message first, followed by alternating user and assistant messages.  See <see href="https://platform.openai.com/docs/guides/chat/introduction">the OpenAI docs</see> for more details about usage.</param>
 		/// <param name="content">The content of the message)</param>
-		public void AppendMessage(ChatMessageRole role, string content) => this.AppendMessage(new ChatMessage(role, content));
+		public void AppendMessage(ChatMessageRole role, string content) => AppendMessage(new ChatMessage(role, content));
+		
+		/// <summary>
+		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory
+		/// </summary>
+		/// <param name="role">The <see cref="ChatMessageRole"/> for the message.  Typically, a conversation is formatted with a system message first, followed by alternating user and assistant messages.  See <see href="https://platform.openai.com/docs/guides/chat/introduction">the OpenAI docs</see> for more details about usage.</param>
+		/// <param name="content">The content of the message</param>
+		/// <param name="id">Id of the message</param>
+		public void AppendMessage(ChatMessageRole role, string content, Guid? id) => AppendMessage(new ChatMessage(role, content, id));
 
 		/// <summary>
 		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory with the Role of <see cref="ChatMessageRole.User"/>.  The user messages help instruct the assistant. They can be generated by the end users of an application, or set by a developer as an instruction.
 		/// </summary>
 		/// <param name="content">Text content generated by the end users of an application, or set by a developer as an instruction</param>
-		public void AppendUserInput(string content) => this.AppendMessage(new ChatMessage(ChatMessageRole.User, content));
+		public void AppendUserInput(string content) => AppendMessage(new ChatMessage(ChatMessageRole.User, content));
+		
+		/// <summary>
+		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory with the Role of <see cref="ChatMessageRole.User"/>.  The user messages help instruct the assistant. They can be generated by the end users of an application, or set by a developer as an instruction.
+		/// </summary>
+		/// <param name="content">Text content generated by the end users of an application, or set by a developer as an instruction</param>
+		/// <param name="id">id of the message</param>
+		public void AppendUserInput(string content, Guid id) => AppendMessage(new ChatMessage(ChatMessageRole.User, content, id));
 
 		/// <summary>
 		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory with the Role of <see cref="ChatMessageRole.User"/>.  The user messages help instruct the assistant. They can be generated by the end users of an application, or set by a developer as an instruction.
 		/// </summary>
 		/// <param name="userName">The name of the user in a multi-user chat</param>
 		/// <param name="content">Text content generated by the end users of an application, or set by a developer as an instruction</param>
-		public void AppendUserInputWithName(string userName, string content) => this.AppendMessage(new ChatMessage(ChatMessageRole.User, content) { Name = userName });
-
-
+		public void AppendUserInputWithName(string userName, string content) => AppendMessage(new ChatMessage(ChatMessageRole.User, content) { Name = userName });
+		
+		/// <summary>
+		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory with the Role of <see cref="ChatMessageRole.User"/>.  The user messages help instruct the assistant. They can be generated by the end users of an application, or set by a developer as an instruction.
+		/// </summary>
+		/// <param name="userName">The name of the user in a multi-user chat</param>
+		/// <param name="content">Text content generated by the end users of an application, or set by a developer as an instruction</param>
+		/// <param name="id">id of the message</param>
+		public void AppendUserInputWithName(string userName, string content, Guid id) => AppendMessage(new ChatMessage(ChatMessageRole.User, content, id) { Name = userName });
+		
 		/// <summary>
 		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory with the Role of <see cref="ChatMessageRole.System"/>.  The system message helps set the behavior of the assistant.
 		/// </summary>
 		/// <param name="content">text content that helps set the behavior of the assistant</param>
-		public void AppendSystemMessage(string content) => this.AppendMessage(new ChatMessage(ChatMessageRole.System, content));
+		public void AppendSystemMessage(string content) => AppendMessage(new ChatMessage(ChatMessageRole.System, content));
+		
+		/// <summary>
+		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory with the Role of <see cref="ChatMessageRole.System"/>.  The system message helps set the behavior of the assistant.
+		/// </summary>
+		/// <param name="content">text content that helps set the behavior of the assistant</param>
+		/// <param name="id">id of the message</param>
+		public void AppendSystemMessage(string content, Guid id) => AppendMessage(new ChatMessage(ChatMessageRole.System, content, id));
+		
+		/// <summary>
+		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory with the Role of <see cref="ChatMessageRole.System"/>.  The system message helps set the behavior of the assistant.
+		/// </summary>
+		/// <param name="content">text content that helps set the behavior of the assistant</param>
+		/// <param name="id">id of the message</param>
+		public void PrependSystemMessage(string content, Guid id) => AppendMessage(new ChatMessage(ChatMessageRole.System, content, id), 0);
+		
 		/// <summary>
 		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory with the Role of <see cref="ChatMessageRole.Assistant"/>.  Assistant messages can be written by a developer to help give examples of desired behavior.
 		/// </summary>
 		/// <param name="content">Text content written by a developer to help give examples of desired behavior</param>
-		public void AppendExampleChatbotOutput(string content) => this.AppendMessage(new ChatMessage(ChatMessageRole.Assistant, content));
+		public void AppendExampleChatbotOutput(string content) => AppendMessage(new ChatMessage(ChatMessageRole.Assistant, content));
+		
+		/// <summary>
+		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory with the Role of <see cref="ChatMessageRole.Assistant"/>.  Assistant messages can be written by a developer to help give examples of desired behavior.
+		/// </summary>
+		/// <param name="content">Text content written by a developer to help give examples of desired behavior</param>
+		/// <param name="id">id of the message</param>
+		public void AppendExampleChatbotOutput(string content, Guid id) => AppendMessage(new ChatMessage(ChatMessageRole.Assistant, content, id));
 
 		#region Non-streaming
 
@@ -119,15 +261,17 @@ namespace OpenAI_API.Chat
 		/// <returns>The string of the response from the chatbot API</returns>
 		public async Task<string> GetResponseFromChatbotAsync()
 		{
-			ChatRequest req = new ChatRequest(RequestParameters);
-			req.Messages = _Messages.ToList();
+			ChatRequest req = new ChatRequest(RequestParameters)
+			{
+				Messages = _Messages.ToList()
+			};
 
-			var res = await _endpoint.CreateChatCompletionAsync(req);
+			ChatResult res = await _endpoint.CreateChatCompletionAsync(req);
 			MostRecentApiResult = res;
 
 			if (res.Choices.Count > 0)
 			{
-				var newMsg = res.Choices[0].Message;
+				ChatMessage newMsg = res.Choices[0].Message;
 				AppendMessage(newMsg);
 				return newMsg.Content;
 			}
@@ -178,19 +322,21 @@ namespace OpenAI_API.Chat
 		/// If you are not using C# 8 supporting async enumerables or if you are using the .NET Framework, you may need to use <see cref="StreamResponseFromChatbotAsync(Action{string})"/> instead.
 		/// </summary>
 		/// <returns>An async enumerable with each of the results as they come in.  See <see href="https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-8#asynchronous-streams"/> for more details on how to consume an async enumerable.</returns>
-		public async IAsyncEnumerable<string> StreamResponseEnumerableFromChatbotAsync()
+		public async IAsyncEnumerable<string> StreamResponseEnumerableFromChatbotAsync(Guid? messageId = null)
 		{
-			ChatRequest req = new ChatRequest(RequestParameters);
-			req.Messages = _Messages.ToList();
+			ChatRequest req = new ChatRequest(RequestParameters)
+			{
+				Messages = _Messages.ToList()
+			};
 
 			StringBuilder responseStringBuilder = new StringBuilder();
 			ChatMessageRole responseRole = null;
 
-			await foreach (var res in _endpoint.StreamChatEnumerableAsync(req))
+			await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
 			{
-				if (res.Choices.FirstOrDefault()?.Delta is ChatMessage delta)
+				if (res.Choices.FirstOrDefault()?.Delta is { } delta)
 				{
-					if (delta.Role != null)
+					if (responseRole == null && delta.Role != null)
 						responseRole = delta.Role;
 
 					string deltaContent = delta.Content;
@@ -206,10 +352,10 @@ namespace OpenAI_API.Chat
 
 			if (responseRole != null)
 			{
-				AppendMessage(responseRole, responseStringBuilder.ToString());
+				AppendMessage(responseRole, responseStringBuilder.ToString(), messageId);
 			}
 		}
-
+		
 		#endregion
 	}
 }
