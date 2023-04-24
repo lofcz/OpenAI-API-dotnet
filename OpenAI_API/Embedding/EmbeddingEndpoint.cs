@@ -1,4 +1,6 @@
-﻿using OpenAI_API.Models;
+﻿using System.Collections.Generic;
+using System.Linq;
+using OpenAI_API.Models;
 using System.Threading.Tasks;
 
 namespace OpenAI_API.Embedding
@@ -34,6 +36,17 @@ namespace OpenAI_API.Embedding
 			EmbeddingRequest req = new EmbeddingRequest(DefaultEmbeddingRequestArgs.Model, input);
 			return await CreateEmbeddingAsync(req);
 		}
+		
+		/// <summary>
+		/// Ask the API to embedd text using the default embedding model <see cref="Model.AdaTextEmbedding"/>
+		/// </summary>
+		/// <param name="input">Text to be embedded</param>
+		/// <returns>Asynchronously returns the embedding result. Look in its <see cref="Data.Embedding"/> property of <see cref="EmbeddingResult.Data"/> to find the vector of floating point numbers</returns>
+		public async Task<EmbeddingResult> CreateEmbeddingAsync(IEnumerable<string> input)
+		{
+			EmbeddingRequestArray req = new EmbeddingRequestArray(DefaultEmbeddingRequestArgs.Model, input);
+			return await CreateEmbeddingAsync(req);
+		}
 
 		/// <summary>
 		/// Ask the API to embedd text using a custom request
@@ -41,6 +54,16 @@ namespace OpenAI_API.Embedding
 		/// <param name="request">Request to be send</param>
 		/// <returns>Asynchronously returns the embedding result. Look in its <see cref="Data.Embedding"/> property of <see cref="EmbeddingResult.Data"/> to find the vector of floating point numbers</returns>
 		public async Task<EmbeddingResult> CreateEmbeddingAsync(EmbeddingRequest request)
+		{
+			return await HttpPost<EmbeddingResult>(postData: request);
+		}
+		
+		/// <summary>
+		/// Ask the API to embedd text using a custom request
+		/// </summary>
+		/// <param name="request">Request to be send</param>
+		/// <returns>Asynchronously returns the embedding result. Look in its <see cref="Data.Embedding"/> property of <see cref="EmbeddingResult.Data"/> to find the vector of floating point numbers</returns>
+		public async Task<EmbeddingResult> CreateEmbeddingAsync(EmbeddingRequestArray request)
 		{
 			return await HttpPost<EmbeddingResult>(postData: request);
 		}
@@ -55,6 +78,18 @@ namespace OpenAI_API.Embedding
 			EmbeddingRequest req = new EmbeddingRequest(DefaultEmbeddingRequestArgs.Model, input);
 			var embeddingResult = await CreateEmbeddingAsync(req);
 			return embeddingResult?.Data?[0]?.Embedding;
+		}
+		
+		/// <summary>
+		/// Ask the API to embedd text using the default embedding model <see cref="Model.AdaTextEmbedding"/>
+		/// </summary>
+		/// <param name="input">Text to be embedded</param>
+		/// <returns>Asynchronously returns the first embedding result as an array of floats.</returns>
+		public async Task<List<float[]>> GetEmbeddingsAsync(IEnumerable<string> input)
+		{
+			EmbeddingRequestArray req = new EmbeddingRequestArray(DefaultEmbeddingRequestArgs.Model, input);
+			EmbeddingResult embeddingResult = await CreateEmbeddingAsync(req);
+			return embeddingResult?.Data.Select(x => x.Embedding).ToList() ?? new List<float[]>();
 		}
 	}
 }
