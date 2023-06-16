@@ -18,7 +18,7 @@ namespace OpenAI_API.ChatFunctions
     /// Refer to the OpenAI API <see href="https://platform.openai.com/docs/guides/gpt/function-calling">guide</see> and the 
     /// JSON Schema <see href="https://json-schema.org/understanding-json-schema/">reference</see> for more details on the format of the parameters.
     /// </remarks>
-    public class Functions
+    public class Function
     {
         /// <summary>
         /// The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
@@ -70,16 +70,16 @@ namespace OpenAI_API.ChatFunctions
         /// <param name="name"></param>
         /// <param name="description"></param>
         /// <param name="parameters"></param>
-        public Functions(string name, string description, JObject parameters)
+        public Function(string name, string description, JObject parameters)
         {
             this.Name = name;
             this.Description = description;
             this.Parameters = parameters;
         }
         /// <summary>
-        /// Creates an empty Functions object.
+        /// Creates an empty Function object.
         /// </summary>
-        public Functions()
+        public Function()
         {
         }
     }

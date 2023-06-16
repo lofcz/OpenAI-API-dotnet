@@ -180,7 +180,7 @@ namespace OpenAI_Tests
                     Name = "get_current_weather",
                     Content = "{\"temperature\": \"22\", \"unit\": \"celsius\", \"description\": \"Sunny\"}"
                 };
-                var functionList = new List<Functions>
+                var functionList = new List<Function>
                 {
                     BuildFunctionForTest()
                 };
@@ -285,7 +285,7 @@ namespace OpenAI_Tests
 			Assert.AreEqual(ChatMessageRole.User, chat.Messages.Last().Role);
 			Assert.AreEqual(result, chat.Messages.Last().Content);
 		}
-		public static Functions BuildFunctionForTest()
+		public static Function BuildFunctionForTest()
 		{
             var parameters = new JObject
             {
@@ -309,7 +309,7 @@ namespace OpenAI_Tests
 			var functionName = "get_current_weather";
 			var functionDescription = "Gets the current weather in a given location";
 
-			return new Functions(functionName, functionDescription, parameters);
+			return new Function(functionName, functionDescription, parameters);
         }
 	}
 }
