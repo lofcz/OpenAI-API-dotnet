@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using OpenAI_API.ChatFunctions;
 
 namespace OpenAI_API.Chat
 {
@@ -118,11 +119,27 @@ namespace OpenAI_API.Chat
 		/// </summary>
 		[JsonProperty("user")]
 		public string user { get; set; }
-
-		/// <summary>
-		/// Creates a new, empty <see cref="ChatRequest"/>
-		/// </summary>
-		public ChatRequest()
+        /// <summary>
+        /// A list of functions the model may generate JSON inputs for.
+        /// </summary>
+        [JsonProperty("functions")]
+		public List<Functions> Functions { get; set; }
+        /// <summary>
+        /// Represents an optional field when sending a function prompt. 
+        /// This field determines which function to call.
+        /// </summary>
+        /// <remarks>
+        /// If this field is not specified, the default behavior ("auto") allows the model to automatically decide whether to call a function or not.
+        /// Specify the name of the function to call in the "Name" attribute of the Function_Call object.
+        /// If you do not want the model to call any function, pass "None" for the "Name" attribute.
+        /// </remarks>
+        [JsonProperty("function_call")]
+        [JsonConverter(typeof(FunctionCallConverter))]
+        public Function_Call Function_Call { get; set; }
+        /// <summary>
+        /// Creates a new, empty <see cref="ChatRequest"/>
+        /// </summary>
+        public ChatRequest()
 		{ }
 
 		/// <summary>
@@ -144,6 +161,8 @@ namespace OpenAI_API.Chat
 			this.FrequencyPenalty = basedOn.FrequencyPenalty;
 			this.PresencePenalty = basedOn.PresencePenalty;
 			this.LogitBias = basedOn.LogitBias;
+			this.Functions = basedOn.Functions;
+			this.Function_Call = basedOn.Function_Call;
 		}
 	}
 }

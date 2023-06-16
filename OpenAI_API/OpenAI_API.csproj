@@ -40,6 +40,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Functions\" />
+	  <None Remove="Moderation\" />
+	</ItemGroup>
+	<ItemGroup>
 		<None Include="nuget_logo.png" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
@@ -61,4 +65,7 @@
 		<PackageReference Include="Microsoft.Extensions.Http" Version="2.1.0" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Moderation\" />
+	</ItemGroup>
 </Project>

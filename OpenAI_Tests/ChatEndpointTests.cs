@@ -3,11 +3,15 @@ using OpenAI_API.Chat;
 using OpenAI_API.Completions;
 using OpenAI_API.Models;
 using OpenAI_API.Moderation;
+using OpenAI_API.ChatFunctions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Schema;
+using Newtonsoft.Json.Linq;
+using System.Net.Mime;
 
 namespace OpenAI_Tests
 {
@@ -149,6 +153,54 @@ namespace OpenAI_Tests
 			Assert.IsNotEmpty(res);
 			Assert.AreEqual("No", res.Trim());
 		}
+		[Test]
+		public async Task SummarizeFunctionResult()
+		{
+			try
+			{
+				var api = new OpenAI_API.OpenAIAPI();
+
+				var conversation = api.Chat.CreateConversation(new ChatRequest { Model = Model.ChatGPTTurbo0613 });
+				conversation.AppendUserInput("What is the weather like in Boston?");
+
+                var initialAssistantMessage = new ChatMessage
+                {
+                    Role = ChatMessageRole.Assistant,
+                    Content = "(null)",
+                    Function_Call = new Function_Call()
+                    {
+                        Name = "get_current_weather",
+                        Arguments = "{ \"location\": \"Boston, MA\"}"
+                    }
+                };
+                conversation.AppendMessage(initialAssistantMessage);
+                var functionMessage = new ChatMessage
+                {
+                    Role = ChatMessageRole.Function,
+                    Name = "get_current_weather",
+                    Content = "{\"temperature\": \"22\", \"unit\": \"celsius\", \"description\": \"Sunny\"}"
+                };
+                var functionList = new List<Functions>
+                {
+                    BuildFunctionForTest()
+                };
+				conversation.AppendMessage(functionMessage);
+                conversation.RequestParameters.Functions = functionList;
+				conversation.RequestParameters.Temperature = 0;
+
+
+				var response = await conversation.GetResponseFromChatbotAsync();
+				
+
+				Assert.AreEqual(response, "The current weather in Boston is sunny with a temperature of 22 degrees Celsius.");
+
+			}
+			catch(NullReferenceException ex)
+			{
+				Console.WriteLine(ex.Message, ex.StackTrace);
+				Assert.False(true);
+			}
+        }
 
 		[Test]
 		public void ChatWithNames()
@@ -180,7 +232,6 @@ namespace OpenAI_Tests
 		public async Task StreamCompletionEnumerableAsync_ShouldStreamData()
 		{
 			var api = new OpenAI_API.OpenAIAPI();
-
 			Assert.IsNotNull(api.Chat);
 
 			var req = new ChatRequest()
@@ -234,6 +285,31 @@ namespace OpenAI_Tests
 			Assert.AreEqual(ChatMessageRole.User, chat.Messages.Last().Role);
 			Assert.AreEqual(result, chat.Messages.Last().Content);
 		}
+		public static Functions BuildFunctionForTest()
+		{
+            var parameters = new JObject
+            {
+                ["type"] = "object",
+                ["required"] = new JArray("location"),
+                ["properties"] = new JObject
+                {
+                    ["location"] = new JObject
+                    {
+                        ["type"] = "string",
+                        ["description"] = "The city and state, e.g. San Francisco, CA"
+                    },
+                    ["unit"] = new JObject
+                    {
+                        ["type"] = "string",
+                        ["enum"] = new JArray("celsius", "fahrenheit")
+                    }
+                }
+            };
 
+			var functionName = "get_current_weather";
+			var functionDescription = "Gets the current weather in a given location";
+
+			return new Functions(functionName, functionDescription, parameters);
+        }
 	}
 }

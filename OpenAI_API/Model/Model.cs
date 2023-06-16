@@ -164,7 +164,14 @@ namespace OpenAI_API.Models
 		/// </summary>
 		public static Model TextModerationLatest => new Model("text-moderation-latest") { OwnedBy = "openai" };
 
-
+		/// <summary>
+		/// Snapshot of gpt-3.5-turbo from June 13th 2023. This model allows the use of function calling as well as more reliable steering via the system message.
+		/// </summary>
+		public static Model ChatGPTTurbo0613 => new Model("gpt-3.5-turbo-0613") { OwnedBy = "openai" };
+        /// <summary>
+        ///  Snapshot of gpt-4 from June 13th 2023. This model allows the use of function calling as well as more reliable steering via the system message.
+        /// </summary>
+        public static Model GPT4_0613 => new Model("gpt-4-0613") { OwnedBy = "openai" };
 		/// <summary>
 		/// Gets more details about this Model from the API, specifically properties such as <see cref="OwnedBy"/> and permissions.
 		/// </summary>
