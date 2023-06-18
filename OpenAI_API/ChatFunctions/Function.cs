@@ -32,20 +32,21 @@ namespace OpenAI_API.ChatFunctions
         public string Description { get; set; }
         
         private JObject _parameters;
-
         /// <summary>
-        /// The parameters the functions accepts, described as a JSON Schema object.
-        /// This property can be set with various types:
-        /// 1. A JObject, which will be assigned directly to the Parameters property.
-        /// 2. A Dictionary of string and object, where keys are property names and values are their respective data.
-        /// 3. An anonymous object, which gets converted into a JObject.
-        /// 4. Any other serializable object.
-        /// Make sure that the object can be serialized into a JSON format.
-        /// See the <see href="https://platform.openai.com/docs/guides/gpt/function-calling">guide</see> for examples,
-        /// and the <see href="https://json-schema.org/understanding-json-schema/">JSON Schema reference</see> for documentation about the format.
+        /// The parameters that the function accepts, described as a JSON Schema object.
+        /// The JSON Schema defines the type and structure of the data. It should be compatible with the JSON Schema standard.
+        /// This property can accept values in various forms which can be serialized into a JSON format:
+        /// 1. A JSON string, which will be parsed into a JObject.
+        /// 2. A JObject, which represents a JSON object, is assigned directly.
+        /// 3. A Dictionary of string and object, where keys are property names and values are their respective data.
+        /// 4. An anonymous object, which gets converted into a JObject.
+        /// 5. Any other object that can be serialized into a JSON format, which will be converted into a JObject.
+        /// If the value cannot be converted into a JSON object, an exception will be thrown.
+        /// Refer to the <see href="https://platform.openai.com/docs/guides/gpt/function-calling">guide</see> for examples and the 
+        /// <see href="https://json-schema.org/understanding-json-schema/">JSON Schema reference</see> for detailed documentation about the format.
         /// </summary>
         [JsonProperty("parameters", Required = Required.Default)]
-        public JObject Parameters
+        public object Parameters
         {
             get
             {
@@ -55,8 +56,22 @@ namespace OpenAI_API.ChatFunctions
             {
                 try
                 {
-                    // If the value is already a JObject, assign it directly. Otherwise, try to convert it to a JObject.
-                    _parameters = value is JObject ? value : JObject.FromObject(value);
+                    if (value is string jsonStringValue)
+                    {
+                        _parameters = JObject.Parse(jsonStringValue);
+                    }
+                    else if (value is JObject jObjectValue)
+                    {
+                        _parameters = jObjectValue;
+                    }
+                    else
+                    {
+                        var settings = new JsonSerializerSettings
+                        {
+                            NullValueHandling = NullValueHandling.Ignore
+                        };
+                        _parameters = JObject.FromObject(value, JsonSerializer.Create(settings));
+                    }
                 }
                 catch (JsonException e)
                 {
@@ -70,7 +85,7 @@ namespace OpenAI_API.ChatFunctions
         /// <param name="name"></param>
         /// <param name="description"></param>
         /// <param name="parameters"></param>
-        public Function(string name, string description, JObject parameters)
+        public Function(string name, string description, object parameters)
         {
             this.Name = name;
             this.Description = description;
