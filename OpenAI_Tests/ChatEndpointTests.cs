@@ -192,7 +192,7 @@ namespace OpenAI_Tests
 				var response = await conversation.GetResponseFromChatbotAsync();
 				
 
-				Assert.AreEqual(response, "The current weather in Boston is sunny with a temperature of 22 degrees Celsius.");
+				Assert.AreEqual("The current weather in Boston is sunny with a temperature of 22 degrees Celsius.", response);
 
 			}
 			catch(NullReferenceException ex)
