@@ -49,11 +49,11 @@ namespace OpenAI_API.Chat
 			}
 		}
 
-		/// <summary>
-		/// The content of the message
-		/// </summary>
-		[JsonProperty("content")]
-		public string Content { get; set; }
+        /// <summary>
+        /// The content of the message
+        /// </summary>
+        [JsonProperty("content", NullValueHandling = NullValueHandling.Include)]
+        public string Content { get; set; }
 
 		/// <summary>
 		/// An optional name of the user in a multi-user chat 
