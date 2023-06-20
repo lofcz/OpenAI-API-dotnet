@@ -158,39 +158,29 @@ namespace OpenAI_Tests
 		{
 			try
 			{
-				var api = new OpenAI_API.OpenAIAPI();
-
-				var conversation = api.Chat.CreateConversation(new ChatRequest { Model = Model.ChatGPTTurbo0613 });
-				conversation.AppendUserInput("What is the weather like in Boston?");
-
-                var initialAssistantMessage = new ChatMessage
-                {
-                    Role = ChatMessageRole.Assistant,
-                    Content = "(null)",
-                    Function_Call = new Function_Call()
-                    {
-                        Name = "get_current_weather",
-                        Arguments = "{ \"location\": \"Boston, MA\"}"
-                    }
-                };
-                conversation.AppendMessage(initialAssistantMessage);
-                var functionMessage = new ChatMessage
-                {
-                    Role = ChatMessageRole.Function,
-                    Name = "get_current_weather",
-                    Content = "{\"temperature\": \"22\", \"unit\": \"celsius\", \"description\": \"Sunny\"}"
-                };
+                var api = new OpenAI_API.OpenAIAPI();
                 var functionList = new List<Function>
                 {
                     BuildFunctionForTest()
                 };
-				conversation.AppendMessage(functionMessage);
-                conversation.RequestParameters.Functions = functionList;
-				conversation.RequestParameters.Temperature = 0;
+                var conversation = api.Chat.CreateConversation(new ChatRequest { 
+                    Model = Model.ChatGPTTurbo0613,
+                    Functions = functionList
+                });
+                conversation.AppendUserInput("What is the weather like in Boston?");
 
+                var response = await conversation.GetResponseFromChatbotAsync();
 
-				var response = await conversation.GetResponseFromChatbotAsync();
-				
+                Assert.IsNull(response);
+
+                var functionMessage = new ChatMessage
+                {
+                    Role = ChatMessageRole.Function,
+                    Name = "get_current_weather",
+                    Content = "{\"temperature\": \"22\", \"unit\": \"celsius\", \"description\": \"sunny\"}"
+                };
+                conversation.AppendMessage(functionMessage);
+                response = await conversation.GetResponseFromChatbotAsync();
 
 				Assert.AreEqual("The current weather in Boston is sunny with a temperature of 22 degrees Celsius.", response);
 
