@@ -170,10 +170,9 @@ namespace OpenAI_Tests
                 });
                 conversation.AppendUserInput("What is the weather like in Boston?");
 
-                var response = await conversation.GetFunction_CallResponseAsync();
+                var response = await conversation.GetResponseFromChatbotAsync();
 
-                Assert.IsNotNull(response);
-				Assert.IsNull(conversation.Messages.Last().Content);
+                Assert.IsNull(response);
 
                 var functionMessage = new ChatMessage
                 {
@@ -182,9 +181,9 @@ namespace OpenAI_Tests
                     Content = "{\"temperature\": \"22\", \"unit\": \"celsius\", \"description\": \"sunny\"}"
                 };
                 conversation.AppendMessage(functionMessage);
-                var responseMessage = await conversation.GetResponseFromChatbotAsync();
+                response = await conversation.GetResponseFromChatbotAsync();
 
-				Assert.AreEqual("The current weather in Boston is sunny with a temperature of 22 degrees Celsius.", responseMessage);
+				Assert.AreEqual("The current weather in Boston is sunny with a temperature of 22 degrees Celsius.", response);
 
 			}
 			catch(NullReferenceException ex)
