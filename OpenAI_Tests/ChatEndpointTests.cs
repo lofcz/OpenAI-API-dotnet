@@ -165,7 +165,8 @@ namespace OpenAI_Tests
                 };
                 var conversation = api.Chat.CreateConversation(new ChatRequest { 
                     Model = Model.ChatGPTTurbo0613,
-                    Functions = functionList
+                    Functions = functionList,
+		    Temperature = 0
                 });
                 conversation.AppendUserInput("What is the weather like in Boston?");
 
