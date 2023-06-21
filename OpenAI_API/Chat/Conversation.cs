@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenAI_API.ChatFunctions;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -111,34 +112,51 @@ namespace OpenAI_API.Chat
 		/// <param name="content">Text content written by a developer to help give examples of desired behavior</param>
 		public void AppendExampleChatbotOutput(string content) => this.AppendMessage(new ChatMessage(ChatMessageRole.Assistant, content));
 
-		#region Non-streaming
+        #region Non-streaming
 
-		/// <summary>
-		/// Calls the API to get a response, which is appended to the current chat's <see cref="Messages"/> as an <see cref="ChatMessageRole.Assistant"/> <see cref="ChatMessage"/>.
-		/// </summary>
-		/// <returns>The string of the response from the chatbot API</returns>
-		public async Task<string> GetResponseFromChatbotAsync()
-		{
-			ChatRequest req = new ChatRequest(RequestParameters);
-			req.Messages = _Messages.ToList();
+        /// <summary>
+        /// A generic asynchronous helper function that performs a chat request and applies the provided selector function on the resulting <see cref="ChatMessage"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the data to be returned. It must be a reference type.</typeparam>
+        /// <param name="selector">A function that takes a <see cref="ChatMessage"/> and returns a result of type T.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the selected data from the chat message.</returns>
+        private async Task<T> GetFromChatResultAsync<T>(Func<ChatMessage, T> selector) where T : class
+        {
+            ChatRequest req = new ChatRequest(RequestParameters);
+            req.Messages = _Messages.ToList();
 
-			var res = await _endpoint.CreateChatCompletionAsync(req);
-			MostRecentApiResult = res;
+            var res = await _endpoint.CreateChatCompletionAsync(req);
+            MostRecentApiResult = res;
 
-			if (res.Choices.Count > 0)
-			{
-				var newMsg = res.Choices[0].Message;
-				AppendMessage(newMsg);
-				return newMsg.Content;
-			}
-			return null;
-		}
-
-		/// <summary>
-		/// OBSOLETE: GetResponseFromChatbot() has been renamed to <see cref="GetResponseFromChatbotAsync"/> to follow .NET naming guidelines.  This alias will be removed in a future version.
-		/// </summary>
-		/// <returns>The string of the response from the chatbot API</returns>
-		[Obsolete("Conversation.GetResponseFromChatbot() has been renamed to GetResponseFromChatbotAsync to follow .NET naming guidelines.  Please update any references to GetResponseFromChatbotAsync().  This alias will be removed in a future version.", false)]
+            if (res.Choices.Count > 0)
+            {
+                var message = res.Choices[0].Message;
+                AppendMessage(message);
+                return selector(message);
+            }
+            return null;
+        }
+        /// <summary>
+        /// Calls the API to get a response, which is appended to the current chat's <see cref="Messages"/> as an <see cref="ChatMessageRole.Assistant"/> <see cref="ChatMessage"/>.
+        /// </summary>
+        /// <returns>The string of the response from the chatbot API</returns>
+        public async Task<string> GetResponseFromChatbotAsync()
+        {
+            return await GetFromChatResultAsync(message => message.Content);
+        }
+        /// <summary>
+        /// Calls the API to get a response and retrieves the <see cref="Function_Call"/> from the resulting <see cref="ChatMessage"/>.
+        /// </summary>
+        /// <returns>The Function_Call object from the chat message.</returns>
+        public async Task<Function_Call> GetFunction_CallResponseAsync()
+        {
+            return await GetFromChatResultAsync(message => message.Function_Call);
+        }
+        /// <summary>
+        /// OBSOLETE: GetResponseFromChatbot() has been renamed to <see cref="GetResponseFromChatbotAsync"/> to follow .NET naming guidelines.  This alias will be removed in a future version.
+        /// </summary>
+        /// <returns>The string of the response from the chatbot API</returns>
+        [Obsolete("Conversation.GetResponseFromChatbot() has been renamed to GetResponseFromChatbotAsync to follow .NET naming guidelines.  Please update any references to GetResponseFromChatbotAsync().  This alias will be removed in a future version.", false)]
 		public Task<string> GetResponseFromChatbot() => GetResponseFromChatbotAsync();
 
 
