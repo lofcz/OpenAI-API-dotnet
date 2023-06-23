@@ -110,14 +110,21 @@ namespace OpenAI_API.Chat
 		/// </summary>
 		/// <param name="content">Text content written by a developer to help give examples of desired behavior</param>
 		public void AppendExampleChatbotOutput(string content) => this.AppendMessage(new ChatMessage(ChatMessageRole.Assistant, content));
+        /// <summary>
+        /// Creates and appends a <see cref="ChatMessage"/> to the chat history with the Role of <see cref="ChatMessageRole.Function"/>.  The function message is a response to a request from the system for output from a predefined function.
+        /// </summary>
+        /// <param name="functionName">The name of the function for which the content has been generated as the result</param>
+        /// <param name="content">The text content (usually JSON)</param>
+        public void AppendFunctionMessage(string functionName, string content) => AppendMessage(new ChatMessage(ChatMessageRole.Function, content) { Name = functionName });
 
-		#region Non-streaming
 
-		/// <summary>
-		/// Calls the API to get a response, which is appended to the current chat's <see cref="Messages"/> as an <see cref="ChatMessageRole.Assistant"/> <see cref="ChatMessage"/>.
-		/// </summary>
-		/// <returns>The string of the response from the chatbot API</returns>
-		public async Task<string> GetResponseFromChatbotAsync()
+        #region Non-streaming
+
+        /// <summary>
+        /// Calls the API to get a response, which is appended to the current chat's <see cref="Messages"/> as an <see cref="ChatMessageRole.Assistant"/> <see cref="ChatMessage"/>.
+        /// </summary>
+        /// <returns>The string of the response from the chatbot API</returns>
+        public async Task<string> GetResponseFromChatbotAsync()
 		{
 			ChatRequest req = new ChatRequest(RequestParameters);
 			req.Messages = _Messages.ToList();
