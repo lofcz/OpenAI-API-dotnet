@@ -6,12 +6,12 @@ namespace OpenAI_API.ChatFunctions
     {
         public override bool CanConvert(Type objectType)
         {
-            return (objectType == typeof(Function_Call));
+            return (objectType == typeof(FunctionCall));
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            var functionCall = value as Function_Call;
+            var functionCall = value as FunctionCall;
 
             if (functionCall.Name == "none" || functionCall.Name == "auto")
             {
@@ -31,15 +31,15 @@ namespace OpenAI_API.ChatFunctions
 
                 if (functionCallType == "none" || functionCallType == "auto")
                 {
-                    return new Function_Call { Name = functionCallType };
+                    return new FunctionCall { Name = functionCallType };
                 }
             }
             else if (reader.TokenType == JsonToken.StartObject)
             {
-                return serializer.Deserialize<Function_Call>(reader);
+                return serializer.Deserialize<FunctionCall>(reader);
             }
 
-            throw new ArgumentException("Unsupported type for Function_Call");
+            throw new ArgumentException("Unsupported type for FunctionCall");
         }
     }
 

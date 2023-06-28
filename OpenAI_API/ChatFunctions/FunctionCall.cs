@@ -6,7 +6,7 @@ namespace OpenAI_API.ChatFunctions
     /// <summary>
     /// An optional class to be used with models that support returning function calls.
     /// </summary>
-    public class Function_Call
+    public class FunctionCall
     {
         /// <summary>
         /// The name of the function.

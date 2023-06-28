@@ -130,12 +130,12 @@ namespace OpenAI_API.Chat
         /// </summary>
         /// <remarks>
         /// If this field is not specified, the default behavior ("auto") allows the model to automatically decide whether to call a function or not.
-        /// Specify the name of the function to call in the "Name" attribute of the Function_Call object.
+        /// Specify the name of the function to call in the "Name" attribute of the FunctionCall object.
         /// If you do not want the model to call any function, pass "None" for the "Name" attribute.
         /// </remarks>
         [JsonProperty("function_call")]
         [JsonConverter(typeof(FunctionCallConverter))]
-        public Function_Call Function_Call { get; set; }
+        public FunctionCall FunctionCall { get; set; }
         /// <summary>
         /// Creates a new, empty <see cref="ChatRequest"/>
         /// </summary>
@@ -162,7 +162,7 @@ namespace OpenAI_API.Chat
 			this.PresencePenalty = basedOn.PresencePenalty;
 			this.LogitBias = basedOn.LogitBias;
 			this.Functions = basedOn.Functions;
-			this.Function_Call = basedOn.Function_Call;
+			this.FunctionCall = basedOn.FunctionCall;
 		}
 	}
 }
