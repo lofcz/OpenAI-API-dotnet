@@ -5,6 +5,7 @@ namespace OpenAI_API.ChatFunctions
     internal class FunctionCallConverter : JsonConverter
     {
         public FunctionCallConverter() : base() { }
+        public FunctionCallConverter() : base() { }
         public override bool CanConvert(Type objectType)
         {
             return (objectType == typeof(FunctionCall));
