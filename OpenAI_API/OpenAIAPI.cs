@@ -1,4 +1,5 @@
-﻿using OpenAI_API.Chat;
+﻿using System;
+using OpenAI_API.Chat;
 using OpenAI_API.Completions;
 using OpenAI_API.Embedding;
 using OpenAI_API.Files;
@@ -35,6 +36,8 @@ namespace OpenAI_API
 		/// Optionally provide an IHttpClientFactory to create the client to send requests.
 		/// </summary>
 		public IHttpClientFactory HttpClientFactory { get; set; }
+		
+		public Func<HttpClient>? GetHttpClient { get; set; }
 
 		/// <summary>
 		/// Creates a new entry point to the OpenAPI API, handling auth and allowing access to the various API endpoints
@@ -50,6 +53,7 @@ namespace OpenAI_API
 			Chat = new ChatEndpoint(this);
 			Moderation = new ModerationEndpoint(this);
 			ImageGenerations = new ImageGenerationEndpoint(this);
+			GetHttpClient = null;
 		}
 
 		/// <summary>

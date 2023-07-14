@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using OpenAI_API.ChatFunctions;
 using static System.Net.WebRequestMethods;
 
 namespace OpenAI_API.Chat
@@ -34,6 +35,11 @@ namespace OpenAI_API.Chat
 		}
 
 		/// <summary>
+		/// If not null, this func is called after a function is resolved
+		/// </summary>
+		public Func<FunctionResult, Task> OnAfterFunctionCall { get; set; }
+		
+		/// <summary>
 		/// After calling <see cref="GetResponseFromChatbotAsync"/>, this contains the full response object which can contain useful metadata like token usages, <see cref="ChatChoice.FinishReason"/>, etc.  This is overwritten with every call to <see cref="GetResponseFromChatbotAsync"/> and only contains the most recent result.
 		/// </summary>
 		public ChatResult MostRecentApiResult { get; private set; }
@@ -51,7 +57,7 @@ namespace OpenAI_API.Chat
 				RequestParameters.Model = model;
 			RequestParameters.Model ??= Models.Model.ChatGPTTurbo;
 
-			_Messages = new List<ChatMessage>();
+			_messages = new List<ChatMessage>();
 			_endpoint = endpoint;
 			RequestParameters.NumChoicesPerMessage = 1;
 			RequestParameters.Stream = false;
@@ -60,9 +66,8 @@ namespace OpenAI_API.Chat
 		/// <summary>
 		/// A list of messages exchanged so far.  Do not modify this list directly.  Instead, use <see cref="AppendMessage(ChatMessage)"/>, <see cref="AppendUserInput(string)"/>, <see cref="AppendSystemMessage(string)"/>, or <see cref="AppendExampleChatbotOutput(string)"/>.
 		/// </summary>
-		public IReadOnlyList<ChatMessage> Messages => _Messages.ToList();
-
-		private List<ChatMessage> _Messages;
+		public IReadOnlyList<ChatMessage> Messages => _messages.ToList();
+		private readonly List<ChatMessage> _messages;
 
 		/// <summary>
 		/// Appends a <see cref="ChatMessage"/> to the chat history
@@ -70,7 +75,7 @@ namespace OpenAI_API.Chat
 		/// <param name="message">The <see cref="ChatMessage"/> to append to the chat history</param>
 		public void AppendMessage(ChatMessage message)
 		{
-			_Messages.Add(message);
+			_messages.Add(message);
 		}
 		
 		/// <summary>
@@ -80,7 +85,7 @@ namespace OpenAI_API.Chat
 		/// <param name="position">Zero-based index at which to insert the message</param>
 		public void AppendMessage(ChatMessage message, int position)
 		{
-			_Messages.Insert(position, message);
+			_messages.Insert(position, message);
 		}
 
 		/// <summary>
@@ -90,11 +95,11 @@ namespace OpenAI_API.Chat
 		/// <returns>Whether message was removed</returns>
 		public bool RemoveMessage(ChatMessage message)
 		{
-			ChatMessage msg = _Messages.FirstOrDefault(x => x.Id == message.Id);
+			ChatMessage msg = _messages.FirstOrDefault(x => x.Id == message.Id);
 			
 			if (msg != null)
 			{
-				_Messages.Remove(msg);
+				_messages.Remove(msg);
 				return true;
 			}
 
@@ -108,11 +113,11 @@ namespace OpenAI_API.Chat
 		/// <returns>Whether message was removed</returns>
 		public bool RemoveMessage(Guid id)
 		{
-			ChatMessage msg = _Messages.FirstOrDefault(x => x.Id == id);
+			ChatMessage msg = _messages.FirstOrDefault(x => x.Id == id);
 			
 			if (msg != null)
 			{
-				_Messages.Remove(msg);
+				_messages.Remove(msg);
 				return true;
 			}
 
@@ -137,7 +142,7 @@ namespace OpenAI_API.Chat
 		/// <returns>Whether message was updated</returns>
 		public bool EditMessageContent(Guid id, string content)
 		{
-			ChatMessage msg = _Messages.FirstOrDefault(x => x.Id == id);
+			ChatMessage msg = _messages.FirstOrDefault(x => x.Id == id);
 			
 			if (msg != null)
 			{
@@ -166,7 +171,7 @@ namespace OpenAI_API.Chat
 		/// <returns>Whether message was updated</returns>
 		public bool EditMessageRole(Guid id, ChatMessageRole role)
 		{
-			ChatMessage msg = _Messages.FirstOrDefault(x => x.Id == id);
+			ChatMessage msg = _messages.FirstOrDefault(x => x.Id == id);
 			
 			if (msg != null)
 			{
@@ -247,6 +252,13 @@ namespace OpenAI_API.Chat
 		public void AppendExampleChatbotOutput(string content) => AppendMessage(new ChatMessage(ChatMessageRole.Assistant, content));
 		
 		/// <summary>
+		/// Creates and appends a <see cref="ChatMessage"/> to the chat history with the Role of <see cref="ChatMessageRole.Function"/>.  The function message is a response to a request from the system for output from a predefined function.
+		/// </summary>
+		/// <param name="functionName">The name of the function for which the content has been generated as the result</param>
+		/// <param name="content">The text content (usually JSON)</param>
+		public void AppendFunctionMessage(string functionName, string content) => AppendMessage(new ChatMessage(ChatMessageRole.Function, content) { Name = functionName });
+		
+		/// <summary>
 		/// Creates and appends a <see cref="ChatMessage"/> to the chat hstory with the Role of <see cref="ChatMessageRole.Assistant"/>.  Assistant messages can be written by a developer to help give examples of desired behavior.
 		/// </summary>
 		/// <param name="content">Text content written by a developer to help give examples of desired behavior</param>
@@ -263,7 +275,7 @@ namespace OpenAI_API.Chat
 		{
 			ChatRequest req = new ChatRequest(RequestParameters)
 			{
-				Messages = _Messages.ToList()
+				Messages = _messages.ToList()
 			};
 
 			ChatResult res = await _endpoint.CreateChatCompletionAsync(req);
@@ -326,7 +338,7 @@ namespace OpenAI_API.Chat
 		{
 			ChatRequest req = new ChatRequest(RequestParameters)
 			{
-				Messages = _Messages.ToList()
+				Messages = _messages.ToList()
 			};
 
 			StringBuilder responseStringBuilder = new StringBuilder();
@@ -334,10 +346,14 @@ namespace OpenAI_API.Chat
 
 			await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
 			{
+				
+				
 				if (res.Choices.FirstOrDefault()?.Delta is { } delta)
 				{
 					if (responseRole == null && delta.Role != null)
+					{
 						responseRole = delta.Role;
+					}
 
 					string deltaContent = delta.Content;
 
@@ -348,6 +364,136 @@ namespace OpenAI_API.Chat
 					}
 				}
 				MostRecentApiResult = res;
+			}
+
+			if (responseRole != null)
+			{
+				AppendMessage(responseRole, responseStringBuilder.ToString(), messageId);
+			}
+		}
+		
+		/// <summary>
+		/// Stream LLM response. If the response is of type "function", entire response is buffered and then <see cref="functionCallHandler"/> is invoked.
+		/// Otherwise the message is intended for the end user and <see cref="messageTokenHandler"/> is called for each incoming token
+		/// </summary>
+		/// <param name="messageId"></param>
+		/// <param name="messageTokenHandler"></param>
+		/// <param name="functionCallHandler"></param>
+		/// <param name="messageTypeResolvedHandler">This is called typically after the first token arrives signaling type of the incoming message</param>
+		public async Task StreamResponseEnumerableFromChatbotAsyncWithFunctions(Guid? messageId, Func<string, Task> messageTokenHandler, Func<List<FunctionCall>, Task<FunctionResult>> functionCallHandler, Func<ChatMessageRole, Task> messageTypeResolvedHandler)
+		{
+			ChatRequest req = new ChatRequest(RequestParameters)
+			{
+				Messages = _messages.ToList()
+			};
+
+			StringBuilder responseStringBuilder = new StringBuilder();
+			ChatMessageRole responseRole = null;
+			string currentFunction = "";
+			Dictionary<string, StringBuilder> functionCalls = new Dictionary<string, StringBuilder>();
+			bool typeResolved = false;
+
+			await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
+			{
+				if (!res.Choices.Any())
+				{
+					MostRecentApiResult = res;
+					continue;
+				}
+				
+				ChatChoice choice = res.Choices[0];
+                
+				if (choice.Delta != null)
+				{
+					ChatMessage delta = choice.Delta;
+					string deltaContent = delta.Content;
+					string finishReason = choice.FinishReason;
+					bool empty = string.IsNullOrEmpty(deltaContent);
+
+					if (responseRole == null && finishReason == "function_call")
+					{
+						responseRole = ChatMessageRole.Function;
+					}
+
+					if (choice.Delta.FunctionCall != null)
+					{
+						responseRole ??= ChatMessageRole.Function;
+						
+						if (!typeResolved)
+						{
+							typeResolved = true;
+							
+							if (messageTypeResolvedHandler != null)
+							{
+								await messageTypeResolvedHandler(ChatMessageRole.Function);	
+							}
+						}
+						
+						if (choice.Delta.FunctionCall.Name != null)
+						{
+							currentFunction = choice.Delta.FunctionCall.Name;
+							functionCalls.Add(currentFunction, new StringBuilder());
+						}
+						else
+						{
+							functionCalls[currentFunction].Append(choice.Delta.FunctionCall.Arguments);
+						}
+					}
+
+					if (responseRole == null && delta.Role != null)
+					{
+						responseRole = delta.Role;
+
+						if (!typeResolved)
+						{
+							typeResolved = true;
+							
+							if (messageTypeResolvedHandler != null)
+							{
+								await messageTypeResolvedHandler(responseRole);	
+							}
+						}
+
+						if (functionCallHandler != null && responseRole == "function")
+						{
+							if (!empty)
+							{
+								responseStringBuilder.Append(deltaContent);
+							}
+							
+							continue;
+						}
+					}
+                    
+					if (!empty)
+					{
+						responseStringBuilder.Append(deltaContent);
+
+						if (messageTokenHandler != null)
+						{
+							await messageTokenHandler.Invoke(deltaContent);	
+						}
+					}
+				}
+				
+				MostRecentApiResult = res;
+			}
+
+			if (responseRole != null && responseRole.Equals(ChatMessageRole.Function))
+			{
+				if (functionCallHandler != null)
+				{
+					List<FunctionCall> calls = functionCalls.Select(pair => new FunctionCall {  Name = pair.Key, Arguments = pair.Value.ToString() }).ToList();
+					FunctionResult fr = await functionCallHandler.Invoke(calls);
+					AppendMessage(new ChatMessage(responseRole, fr.Content, messageId) { Name = fr.Name });
+
+					if (OnAfterFunctionCall != null)
+					{
+						await OnAfterFunctionCall(fr);
+					}
+					
+					return;
+				}
 			}
 
 			if (responseRole != null)

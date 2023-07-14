@@ -16,12 +16,12 @@ namespace OpenAI_API
 	/// </summary>
 	public abstract class EndpointBase
 	{
-		private const string UserAgent = "okgodoit/dotnet_openai_api";
+		private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36";
 
 		/// <summary>
 		/// The internal reference to the API, mostly used for authentication
 		/// </summary>
-		protected readonly OpenAIAPI _Api;
+		private readonly OpenAIAPI _Api;
 
 		/// <summary>
 		/// Constructor of the api endpoint base, to be called from the contructor of any devived classes.  Rather than instantiating any endpoint yourself, access it through an instance of <see cref="OpenAIAPI"/>.
@@ -29,7 +29,7 @@ namespace OpenAI_API
 		/// <param name="api"></param>
 		internal EndpointBase(OpenAIAPI api)
 		{
-			this._Api = api;
+			_Api = api;
 		}
 
 		/// <summary>
@@ -40,13 +40,7 @@ namespace OpenAI_API
 		/// <summary>
 		/// Gets the URL of the endpoint, based on the base OpenAI API URL followed by the endpoint name.  For example "https://api.openai.com/v1/completions"
 		/// </summary>
-		protected string Url
-		{
-			get
-			{
-				return string.Format(_Api.ApiUrlFormat, _Api.ApiVersion, Endpoint);
-			}
-		}
+		protected string Url => string.Format(_Api.ApiUrlFormat, _Api.ApiVersion, Endpoint);
 
 		/// <summary>
 		/// Gets an HTTPClient with the appropriate authorization and other headers set
@@ -59,20 +53,9 @@ namespace OpenAI_API
 			{
 				throw new AuthenticationException("You must provide API authentication.  Please refer to https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication for details.");
 			}
-	
-			HttpClient client;
-			var clientFactory = _Api.HttpClientFactory;
-			if (clientFactory != null)
-			{
-				client = clientFactory.CreateClient();
-			}
-			else
-			{
-				client = new HttpClient();
-			}
-
+			
+			HttpClient client = _Api.GetHttpClient != null ? _Api.GetHttpClient.Invoke() : _Api.HttpClientFactory != null ? _Api.HttpClientFactory.CreateClient() : new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
 			client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _Api.Auth.ApiKey);
-			// Further authentication-header used for Azure openAI service
 			client.DefaultRequestHeaders.Add("api-key", _Api.Auth.ApiKey);
 			client.DefaultRequestHeaders.Add("User-Agent", UserAgent);
 			if (!string.IsNullOrEmpty(_Api.Auth.OpenAIOrganization)) client.DefaultRequestHeaders.Add("OpenAI-Organization", _Api.Auth.OpenAIOrganization);
@@ -88,7 +71,7 @@ namespace OpenAI_API
 		/// <param name="name">The name of the endpoint being used</param>
 		/// <param name="description">Additional details about the endpoint of this request (optional)</param>
 		/// <returns>A human-readable string error message.</returns>
-		protected string GetErrorMessage(string resultAsString, HttpResponseMessage response, string name, string description = "")
+		private static string GetErrorMessage(string resultAsString, HttpResponseMessage response, string name, string description = "")
 		{
 			return $"Error at {name} ({description}) with HTTP status code: {response.StatusCode}. Content: {resultAsString ?? "<no content>"}";
 		}
@@ -106,60 +89,52 @@ namespace OpenAI_API
 		private async Task<HttpResponseMessage> HttpRequestRaw(string url = null, HttpMethod verb = null, object postData = null, bool streaming = false)
 		{
 			if (string.IsNullOrEmpty(url))
-				url = this.Url;
+				url = Url;
 
 			if (verb == null)
 				verb = HttpMethod.Get;
 
-			using var client = GetClient();
+			using HttpClient client = GetClient();
 
-			HttpResponseMessage response = null;
-			string resultAsString = null;
 			HttpRequestMessage req = new HttpRequestMessage(verb, url);
 
 			if (postData != null)
 			{
-				if (postData is HttpContent)
+				if (postData is HttpContent data)
 				{
-					req.Content = postData as HttpContent;
+					req.Content = data;
 				}
 				else
 				{
-					string jsonContent = JsonConvert.SerializeObject(postData, new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
-					var stringContent = new StringContent(jsonContent, UnicodeEncoding.UTF8, "application/json");
+					string jsonContent = JsonConvert.SerializeObject(postData, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+					StringContent stringContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 					req.Content = stringContent;
 				}
 			}
-			response = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead);
+			HttpResponseMessage response = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead);
 
 			if (response.IsSuccessStatusCode)
 			{
 				return response;
 			}
-			else
-			{
-				try
-				{
-					resultAsString = await response.Content.ReadAsStringAsync();
-				}
-				catch (Exception e)
-				{
-					resultAsString = "Additionally, the following error was thrown when attemping to read the response content: " + e.ToString();
-				}
 
-				if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-				{
-					throw new AuthenticationException("OpenAI rejected your authorization, most likely due to an invalid API Key.  Try checking your API Key and see https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication for guidance.  Full API response follows: " + resultAsString);
-				}
-				else if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
-				{
-					throw new HttpRequestException("OpenAI had an internal server error, which can happen occasionally.  Please retry your request.  " + GetErrorMessage(resultAsString, response, Endpoint, url));
-				}
-				else
-				{
-					throw new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint, url));
-				}
+			string resultAsString;
+			
+			try
+			{
+				resultAsString = await response.Content.ReadAsStringAsync();
 			}
+			catch (Exception e)
+			{
+				resultAsString = $"Additionally, the following error was thrown when attemping to read the response content: {e}";
+			}
+
+			throw response.StatusCode switch
+			{
+				System.Net.HttpStatusCode.Unauthorized => new AuthenticationException("OpenAI rejected your authorization, most likely due to an invalid API Key.  Try checking your API Key and see https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication for guidance.  Full API response follows: " + resultAsString),
+				System.Net.HttpStatusCode.InternalServerError => new HttpRequestException("OpenAI had an internal server error, which can happen occasionally.  Please retry your request.  " + GetErrorMessage(resultAsString, response, Endpoint, url)),
+				_ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint, url))
+			};
 		}
 
 		/// <summary>
@@ -170,7 +145,7 @@ namespace OpenAI_API
 		/// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned</exception>
 		internal async Task<string> HttpGetContent<T>(string url = null)
 		{
-			var response = await HttpRequestRaw(url);
+			HttpResponseMessage response = await HttpRequestRaw(url);
 			return await response.Content.ReadAsStringAsync();
 		}
 
@@ -186,10 +161,10 @@ namespace OpenAI_API
 		/// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned or if the result couldn't be parsed.</exception>
 		private async Task<T> HttpRequest<T>(string url = null, HttpMethod verb = null, object postData = null) where T : ApiResultBase
 		{
-			var response = await HttpRequestRaw(url, verb, postData);
+			HttpResponseMessage response = await HttpRequestRaw(url, verb, postData);
 			string resultAsString = await response.Content.ReadAsStringAsync();
 
-			var res = JsonConvert.DeserializeObject<T>(resultAsString);
+			T res = JsonConvert.DeserializeObject<T>(resultAsString);
 			try
 			{
 				res.Organization = response.Headers.GetValues("Openai-Organization").FirstOrDefault();
@@ -340,7 +315,7 @@ namespace OpenAI_API
 		/// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned</exception>
 		protected async IAsyncEnumerable<T> HttpStreamingRequest<T>(string url = null, HttpMethod verb = null, object postData = null) where T : ApiResultBase
 		{
-			var response = await HttpRequestRaw(url, verb, postData, true);
+			HttpResponseMessage response = await HttpRequestRaw(url, verb, postData, true);
 
 			string organization = null;
 			string requestId = null;
@@ -360,41 +335,32 @@ namespace OpenAI_API
 			{
 				Debug.Print($"Issue parsing metadata of OpenAi Response.  Url: {url}, Error: {e.ToString()}.  This is probably ignorable.");
 			}
-
-			string resultAsString = "";
-
-			using (var stream = await response.Content.ReadAsStreamAsync())
-			using (StreamReader reader = new StreamReader(stream))
+			
+			using Stream stream = await response.Content.ReadAsStreamAsync();
+			using StreamReader reader = new StreamReader(stream);
+			while (await reader.ReadLineAsync() is { } line)
 			{
-				string line;
-				while ((line = await reader.ReadLineAsync()) != null)
+				if (line.StartsWith("data:"))
+					line = line.Substring("data:".Length);
+
+				line = line.TrimStart();
+
+				if (line == "[DONE]")
 				{
-					resultAsString += line + Environment.NewLine;
+					yield break;
+				}
 
-					if (line.StartsWith("data:"))
-						line = line.Substring("data:".Length);
+				if (!line.StartsWith(":") && !string.IsNullOrWhiteSpace(line))
+				{
+					T res = JsonConvert.DeserializeObject<T>(line);
+					res.Organization = organization;
+					res.RequestId = requestId;
+					res.ProcessingTime = processingTime;
+					res.OpenaiVersion = openaiVersion;
+					if (string.IsNullOrEmpty(res.Model))
+						res.Model = modelFromHeaders;
 
-					line = line.TrimStart();
-
-					if (line == "[DONE]")
-					{
-						yield break;
-					}
-					else if (line.StartsWith(":"))
-					{ }
-					else if (!string.IsNullOrWhiteSpace(line))
-					{
-						var res = JsonConvert.DeserializeObject<T>(line);
-
-						res.Organization = organization;
-						res.RequestId = requestId;
-						res.ProcessingTime = processingTime;
-						res.OpenaiVersion = openaiVersion;
-						if (string.IsNullOrEmpty(res.Model))
-							res.Model = modelFromHeaders;
-
-						yield return res;
-					}
+					yield return res;
 				}
 			}
 		}

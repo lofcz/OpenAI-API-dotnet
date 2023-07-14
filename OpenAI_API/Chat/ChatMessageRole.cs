@@ -20,7 +20,7 @@ namespace OpenAI_API.Chat
 		/// <summary>
 		/// Gets the singleton instance of <see cref="ChatMessageRole"/> based on the string value.
 		/// </summary>
-		/// <param name="roleName">Muse be one of "system", "user", or "assistant"</param>
+		/// <param name="roleName">Muse be one of "system", "user", "assistant", or "function"</param>
 		/// <returns></returns>
 		public static ChatMessageRole FromString(string roleName)
 		{
@@ -29,6 +29,7 @@ namespace OpenAI_API.Chat
 				"system" => ChatMessageRole.System,
 				"user" => ChatMessageRole.User,
 				"assistant" => ChatMessageRole.Assistant,
+				"function" => ChatMessageRole.Function,
 				_ => null
 			};
 		}
@@ -47,6 +48,10 @@ namespace OpenAI_API.Chat
 		/// The assistant messages help store prior responses. They can also be written by a developer to help give examples of desired behavior.
 		/// </summary>
 		public static ChatMessageRole Assistant { get; } = new ChatMessageRole("assistant");
+		/// <summary>
+		/// The function role can be used in models which support function access.
+		/// </summary>
+		public static ChatMessageRole Function { get; } = new ChatMessageRole("function");
 
 		/// <summary>
 		/// Gets the string value for this role to pass to the API
