@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using OpenAI_API.Chat;
 using OpenAI_API.Completions;
 using OpenAI_API.Embedding;
@@ -6,6 +6,7 @@ using OpenAI_API.Files;
 using OpenAI_API.Images;
 using OpenAI_API.Models;
 using OpenAI_API.Moderation;
+using OpenAI_API.Audio;
 using System.Net.Http;
 
 namespace OpenAI_API
@@ -53,8 +54,9 @@ namespace OpenAI_API
 			Chat = new ChatEndpoint(this);
 			Moderation = new ModerationEndpoint(this);
 			ImageGenerations = new ImageGenerationEndpoint(this);
-			ImageEdit= new ImageEditEndpoint(this);
+			ImageEdit = new ImageEditEndpoint(this);
 			GetHttpClient = null;
+			Audio = new AudioEndpoint(this);
 		}
 
 		/// <summary>
@@ -106,10 +108,15 @@ namespace OpenAI_API
 		/// The API lets you do operations with images. Given a prompt and/or an input image, the model will generate a new image.
 		/// </summary>
 		public IImageGenerationEndpoint ImageGenerations { get; }
-		
+
 		/// <summary>
 		/// The API lets you do operations with images. Given a prompt and an input image, the model will edit a new image.
 		/// </summary>
 		public IImageEditEndpoint ImageEdit { get; }
+
+		/// <summary>
+		/// Manages audio operations such as transcipt,translate.
+		/// </summary>
+		public IAudioEndpoint Audio { get; }
 	}
 }
