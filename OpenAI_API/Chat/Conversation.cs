@@ -37,7 +37,7 @@ namespace OpenAI_API.Chat
 		/// <summary>
 		/// If not null, this func is called after a function is resolved
 		/// </summary>
-		public Func<FunctionResult, Task> OnAfterFunctionCall { get; set; }
+		public Func<FunctionResult, ChatMessage, Task> OnAfterFunctionCall { get; set; }
 		
 		/// <summary>
 		/// After calling <see cref="GetResponseFromChatbotAsync"/>, this contains the full response object which can contain useful metadata like token usages, <see cref="ChatChoice.FinishReason"/>, etc.  This is overwritten with every call to <see cref="GetResponseFromChatbotAsync"/> and only contains the most recent result.
@@ -380,7 +380,7 @@ namespace OpenAI_API.Chat
 		/// <param name="messageTokenHandler"></param>
 		/// <param name="functionCallHandler"></param>
 		/// <param name="messageTypeResolvedHandler">This is called typically after the first token arrives signaling type of the incoming message</param>
-		public async Task StreamResponseEnumerableFromChatbotAsyncWithFunctions(Guid? messageId, Func<string, Task> messageTokenHandler, Func<List<FunctionCall>, Task<FunctionResult>> functionCallHandler, Func<ChatMessageRole, Task> messageTypeResolvedHandler)
+		public async Task StreamResponseEnumerableFromChatbotAsyncWithFunctions(Guid? messageId, Func<string, Task> messageTokenHandler, Func<List<FunctionCall>, Task<FunctionResult?>> functionCallHandler, Func<ChatMessageRole, Task> messageTypeResolvedHandler)
 		{
 			ChatRequest req = new ChatRequest(RequestParameters)
 			{
@@ -484,12 +484,17 @@ namespace OpenAI_API.Chat
 				if (functionCallHandler != null)
 				{
 					List<FunctionCall> calls = functionCalls.Select(pair => new FunctionCall {  Name = pair.Key, Arguments = pair.Value.ToString() }).ToList();
-					FunctionResult fr = await functionCallHandler.Invoke(calls);
-					AppendMessage(new ChatMessage(responseRole, fr.Content, messageId) { Name = fr.Name });
+					FunctionResult? fr = await functionCallHandler.Invoke(calls);
 
-					if (OnAfterFunctionCall != null)
+					if (fr != null)
 					{
-						await OnAfterFunctionCall(fr);
+						ChatMessage msg = new ChatMessage(responseRole, fr.Content, Guid.NewGuid()) { Name = fr.Name };
+						AppendMessage(msg);
+
+						if (OnAfterFunctionCall != null)
+						{
+							await OnAfterFunctionCall(fr, msg);
+						}	
 					}
 					
 					return;
