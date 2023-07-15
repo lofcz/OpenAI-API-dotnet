@@ -19,6 +19,22 @@ namespace OpenAI_API.Chat
         /// </summary>
         [JsonProperty("content", Required = Required.Always)]
         public string Content { get; set; }
+
+        public FunctionResult()
+        {
+            
+        }
+
+        /// <summary>
+        /// A serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="content"></param>
+        public FunctionResult(string name, object? content)
+        {
+            Name = name;
+            Content = content == null ? "{}" : JsonConvert.SerializeObject(content);
+        }
     }
     
     /// <summary>
