@@ -380,12 +380,19 @@ namespace OpenAI_API.Chat
 		/// <param name="messageTokenHandler"></param>
 		/// <param name="functionCallHandler"></param>
 		/// <param name="messageTypeResolvedHandler">This is called typically after the first token arrives signaling type of the incoming message</param>
-		public async Task StreamResponseEnumerableFromChatbotAsyncWithFunctions(Guid? messageId, Func<string, Task> messageTokenHandler, Func<List<FunctionCall>, Task<FunctionResult?>> functionCallHandler, Func<ChatMessageRole, Task> messageTypeResolvedHandler)
+		/// <param name="allowFunctions">if false, functions won't be allowed to executed regardless of the conversation settings</param>
+		public async Task StreamResponseEnumerableFromChatbotAsyncWithFunctions(Guid? messageId, Func<string, Task> messageTokenHandler, Func<List<FunctionCall>, Task<FunctionResult?>> functionCallHandler, Func<ChatMessageRole, Task> messageTypeResolvedHandler, bool allowFunctions)
 		{
 			ChatRequest req = new ChatRequest(RequestParameters)
 			{
 				Messages = _messages.ToList()
 			};
+
+			if (!allowFunctions)
+			{
+				req.Functions = null;
+				req.FunctionCall = new FunctionCall { Name = "none" };
+			}
 
 			StringBuilder responseStringBuilder = new StringBuilder();
 			ChatMessageRole responseRole = null;
