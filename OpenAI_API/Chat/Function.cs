@@ -19,6 +19,11 @@ namespace OpenAI_API.Chat
         /// </summary>
         [JsonProperty("content", Required = Required.Always)]
         public string Content { get; set; }
+        /// <summary>
+        /// A passtrough arbitrary data
+        /// </summary>
+        [JsonIgnore]
+        public object? Data { get; set; }
 
         public FunctionResult()
         {
@@ -26,14 +31,27 @@ namespace OpenAI_API.Chat
         }
 
         /// <summary>
-        /// A serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON
+        ///
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="content"></param>
+        /// <param name="name">Name of the function that was called. Can differ from the originally intended function.</param>
+        /// <param name="content">A serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON</param>
         public FunctionResult(string name, object? content)
         {
             Name = name;
             Content = content == null ? "{}" : JsonConvert.SerializeObject(content);
+        }
+        
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="name">Name of the function that was called. Can differ from the originally intended function.</param>
+        /// <param name="content">A serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON</param>
+        /// <param name="data">Any data you might want to work with later but not include in the generated chat message</param>
+        public FunctionResult(string name, object? content, object? data)
+        {
+            Name = name;
+            Content = content == null ? "{}" : JsonConvert.SerializeObject(content);
+            Data = data;
         }
     }
     
