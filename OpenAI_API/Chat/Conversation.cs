@@ -289,6 +289,61 @@ namespace OpenAI_API.Chat
 			}
 			return null;
 		}
+		
+		/// <summary>
+		/// Calls the API to get a response, which is appended to the current chat's <see cref="Messages"/> as an <see cref="ChatMessageRole.Assistant"/> <see cref="ChatMessage"/>.
+		/// </summary>
+		/// <returns>The string of the response from the chatbot API</returns>
+		public async Task<ChatResponse?> GetResponseFromChatbotAsyncWithFunctions(Func<List<FunctionCall>, Task<FunctionResult?>> functionCallHandler)
+		{
+			ChatRequest req = new ChatRequest(RequestParameters)
+			{
+				Messages = _messages.ToList()
+			};
+
+			ChatResult res = await _endpoint.CreateChatCompletionAsync(req);
+			MostRecentApiResult = res;
+
+			if (res.Choices.Count > 0)
+			{
+				ChatMessage newMsg = res.Choices[0].Message;
+				AppendMessage(newMsg);
+				
+				if (res.Choices[0].FinishReason == "function_call")
+				{
+					FunctionResult result = await functionCallHandler.Invoke(new List<FunctionCall> { newMsg.FunctionCall });
+					return new ChatResponse { Kind = ChatResponseKinds.Function, FunctionResult = result };
+				}
+                
+				return new ChatResponse { Kind = ChatResponseKinds.Message, Message = newMsg.Content };
+			}
+			
+			return null;
+		}
+		
+		/// <summary>
+		/// Calls the API to get a response, which is appended to the current chat's <see cref="Messages"/> as an <see cref="ChatMessageRole.Assistant"/> <see cref="ChatMessage"/>.
+		/// </summary>
+		/// <returns>The string of the response from the chatbot API</returns>
+		public async Task<ChatMessage?> GetResponseFromChatbotAsyncRaw()
+		{
+			ChatRequest req = new ChatRequest(RequestParameters)
+			{
+				Messages = _messages.ToList()
+			};
+
+			ChatResult res = await _endpoint.CreateChatCompletionAsync(req);
+			MostRecentApiResult = res;
+
+			if (res.Choices.Count > 0)
+			{
+				ChatMessage newMsg = res.Choices[0].Message;
+				AppendMessage(newMsg);
+				return newMsg;
+			}
+			
+			return null;
+		}
 
 		/// <summary>
 		/// OBSOLETE: GetResponseFromChatbot() has been renamed to <see cref="GetResponseFromChatbotAsync"/> to follow .NET naming guidelines.  This alias will be removed in a future version.
@@ -380,20 +435,16 @@ namespace OpenAI_API.Chat
 		/// <param name="messageTokenHandler"></param>
 		/// <param name="functionCallHandler"></param>
 		/// <param name="messageTypeResolvedHandler">This is called typically after the first token arrives signaling type of the incoming message</param>
-		/// <param name="allowFunctions">if false, functions won't be allowed to executed regardless of the conversation settings</param>
-		public async Task StreamResponseEnumerableFromChatbotAsyncWithFunctions(Guid? messageId, Func<string, Task> messageTokenHandler, Func<List<FunctionCall>, Task<FunctionResult?>> functionCallHandler, Func<ChatMessageRole, Task> messageTypeResolvedHandler, bool allowFunctions)
+		/// <param name="chatRequestHandler">if false, functions won't be allowed to executed regardless of the conversation settings</param>
+		public async Task StreamResponseEnumerableFromChatbotAsyncWithFunctions(Guid? messageId, Func<string, Task> messageTokenHandler, Func<List<FunctionCall>, Task<FunctionResult?>> functionCallHandler, Func<ChatMessageRole, Task> messageTypeResolvedHandler, Func<ChatRequest, Task<ChatRequest>> chatRequestHandler)
 		{
 			ChatRequest req = new ChatRequest(RequestParameters)
 			{
 				Messages = _messages.ToList()
 			};
 
-			if (!allowFunctions)
-			{
-				req.Functions = null;
-				req.FunctionCall = new FunctionCall { Name = "none" };
-			}
-
+			req = await chatRequestHandler.Invoke(req);
+            
 			StringBuilder responseStringBuilder = new StringBuilder();
 			ChatMessageRole responseRole = null;
 			string currentFunction = "";
