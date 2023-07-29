@@ -309,7 +309,7 @@ namespace OpenAI_API.Chat
 				ChatMessage newMsg = res.Choices[0].Message;
 				AppendMessage(newMsg);
 				
-				if (res.Choices[0].FinishReason == "function_call")
+				if (res.Choices[0].Message.FunctionCall != null && res.Choices[0].Message.FunctionCall.Name.Length > 0 && res.Choices[0].Message.FunctionCall.Name != "none" && res.Choices[0].Message.FunctionCall.Name != "auto")
 				{
 					FunctionResult result = await functionCallHandler.Invoke(new List<FunctionCall> { newMsg.FunctionCall });
 					return new ChatResponse { Kind = ChatResponseKinds.Function, FunctionResult = result };
@@ -325,7 +325,7 @@ namespace OpenAI_API.Chat
 		/// Calls the API to get a response, which is appended to the current chat's <see cref="Messages"/> as an <see cref="ChatMessageRole.Assistant"/> <see cref="ChatMessage"/>.
 		/// </summary>
 		/// <returns>The string of the response from the chatbot API</returns>
-		public async Task<ChatMessage?> GetResponseFromChatbotAsyncRaw()
+		public async Task<ChatChoice?> GetResponseFromChatbotAsyncRaw()
 		{
 			ChatRequest req = new ChatRequest(RequestParameters)
 			{
@@ -339,7 +339,7 @@ namespace OpenAI_API.Chat
 			{
 				ChatMessage newMsg = res.Choices[0].Message;
 				AppendMessage(newMsg);
-				return newMsg;
+				return res.Choices[0];
 			}
 			
 			return null;
