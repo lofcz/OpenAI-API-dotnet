@@ -31,22 +31,30 @@ namespace OpenAI_API
 		/// <summary>
 		/// The API authentication information to use for API calls
 		/// </summary>
-		public APIAuthentication Auth { get; set; }
+		public APIAuthentication? Auth { get; private set;  }
 
 		/// <summary>
-		/// Optionally provide an IHttpClientFactory to create the client to send requests.
+		/// Sets the API authentication information to use for API calls
 		/// </summary>
-		public IHttpClientFactory HttpClientFactory { get; set; }
-		
-		public Func<HttpClient>? GetHttpClient { get; set; }
+		public void SetAuth(APIAuthentication auth)
+		{
+			Auth = auth;
+			EndpointBase.UpdateDefaultAuth(auth);
+		}
 
 		/// <summary>
 		/// Creates a new entry point to the OpenAPI API, handling auth and allowing access to the various API endpoints
 		/// </summary>
 		/// <param name="apiKeys">The API authentication information to use for API calls, or <see langword="null"/> to attempt to use the <see cref="APIAuthentication.Default"/>, potentially loading from environment vars or from a config file.</param>
-		public OpenAIAPI(APIAuthentication apiKeys = null)
+		public OpenAIAPI(APIAuthentication? apiKeys = null)
 		{
-			this.Auth = apiKeys.ThisOrDefault();
+			Auth = apiKeys;
+
+			if (apiKeys != null)
+			{
+				SetAuth(apiKeys);
+			}
+			
 			Completions = new CompletionEndpoint(this);
 			Models = new ModelsEndpoint(this);
 			Files = new FilesEndpoint(this);
@@ -55,23 +63,7 @@ namespace OpenAI_API
 			Moderation = new ModerationEndpoint(this);
 			ImageGenerations = new ImageGenerationEndpoint(this);
 			ImageEdit = new ImageEditEndpoint(this);
-			GetHttpClient = null;
 			Audio = new AudioEndpoint(this);
-		}
-
-		/// <summary>
-		/// Instantiates a version of the API for connecting to the Azure OpenAI endpoint instead of the main OpenAI endpoint.
-		/// </summary>
-		/// <param name="YourResourceName">The name of your Azure OpenAI Resource</param>
-		/// <param name="deploymentId">The name of your model deployment. You're required to first deploy a model before you can make calls.</param>
-		/// <param name="apiKey">The API authentication information to use for API calls, or <see langword="null"/> to attempt to use the <see cref="APIAuthentication.Default"/>, potentially loading from environment vars or from a config file.  Currently this library only supports the api-key flow, not the AD-Flow.</param>
-		/// <returns></returns>
-		public static OpenAIAPI ForAzure(string YourResourceName, string deploymentId, APIAuthentication apiKey = null)
-		{
-			OpenAIAPI api = new OpenAIAPI(apiKey);
-			api.ApiVersion = "2022-12-01";
-			api.ApiUrlFormat = $"https://{YourResourceName}.openai.azure.com/openai/deployments/{deploymentId}/" + "{1}?api-version={0}";
-			return api;
 		}
 
 		/// <summary>

@@ -12,7 +12,7 @@ namespace OpenAI_API.ChatFunctions
         /// The name of the function.
         /// </summary>
         [JsonProperty("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// Any arguments that need to be passed to the function. This needs to be in JSON format.

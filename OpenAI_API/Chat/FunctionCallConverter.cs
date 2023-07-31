@@ -13,11 +13,11 @@ namespace OpenAI_API.Chat
             return (objectType == typeof(FunctionCall));
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
-            FunctionCall functionCall = value as FunctionCall;
+            FunctionCall? functionCall = value as FunctionCall;
 
-            if (functionCall != null && (functionCall.Name == "none" || functionCall.Name == "auto"))
+            if (functionCall is { Name: "none" or "auto" })
             {
                 serializer.Serialize(writer, functionCall.Name);
             }
@@ -27,15 +27,15 @@ namespace OpenAI_API.Chat
             }
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         {
             switch (reader.TokenType)
             {
                 case JsonToken.String:
                 {
-                    string functionCallType = (string)serializer.Deserialize(reader, typeof(string));
+                    string? functionCallType = (string?)serializer.Deserialize(reader, typeof(string));
 
-                    if (functionCallType == "none" || functionCallType == "auto")
+                    if (functionCallType is "none" or "auto")
                     {
                         return new FunctionCall { Name = functionCallType };
                     }

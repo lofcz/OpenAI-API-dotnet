@@ -43,6 +43,11 @@ namespace OpenAI_API.Chat
 		/// After calling <see cref="GetResponseFromChatbotAsync"/>, this contains the full response object which can contain useful metadata like token usages, <see cref="ChatChoice.FinishReason"/>, etc.  This is overwritten with every call to <see cref="GetResponseFromChatbotAsync"/> and only contains the most recent result.
 		/// </summary>
 		public ChatResult MostRecentApiResult { get; private set; }
+		
+		/// <summary>
+		/// If not null, overrides the default OpenAI auth
+		/// </summary>
+		public APIAuthentication? Auth { get; set; }
 
 		/// <summary>
 		/// Creates a new conversation with ChatGPT chat
@@ -50,7 +55,7 @@ namespace OpenAI_API.Chat
 		/// <param name="endpoint">A reference to the API endpoint, needed for API requests.  Generally should be <see cref="OpenAIAPI.Chat"/>.</param>
 		/// <param name="model">Optionally specify the model to use for ChatGPT requests.  If not specified, used <paramref name="defaultChatRequestArgs"/>.Model or falls back to <see cref="OpenAI_API.Models.Model.ChatGPTTurbo"/></param>
 		/// <param name="defaultChatRequestArgs">Allows setting the parameters to use when calling the ChatGPT API.  Can be useful for setting temperature, presence_penalty, and more.  See <see href="https://platform.openai.com/docs/api-reference/chat/create">OpenAI documentation for a list of possible parameters to tweak.</see></param>
-		public Conversation(ChatEndpoint endpoint, Models.Model model = null, ChatRequest defaultChatRequestArgs = null)
+		public Conversation(ChatEndpoint endpoint, Models.Model? model = null, ChatRequest? defaultChatRequestArgs = null)
 		{
 			RequestParameters = new ChatRequest(defaultChatRequestArgs);
 			if (model != null)
@@ -95,7 +100,7 @@ namespace OpenAI_API.Chat
 		/// <returns>Whether message was removed</returns>
 		public bool RemoveMessage(ChatMessage message)
 		{
-			ChatMessage msg = _messages.FirstOrDefault(x => x.Id == message.Id);
+			ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == message.Id);
 			
 			if (msg != null)
 			{
@@ -113,7 +118,7 @@ namespace OpenAI_API.Chat
 		/// <returns>Whether message was removed</returns>
 		public bool RemoveMessage(Guid id)
 		{
-			ChatMessage msg = _messages.FirstOrDefault(x => x.Id == id);
+			ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == id);
 			
 			if (msg != null)
 			{
@@ -142,7 +147,7 @@ namespace OpenAI_API.Chat
 		/// <returns>Whether message was updated</returns>
 		public bool EditMessageContent(Guid id, string content)
 		{
-			ChatMessage msg = _messages.FirstOrDefault(x => x.Id == id);
+			ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == id);
 			
 			if (msg != null)
 			{
@@ -171,7 +176,7 @@ namespace OpenAI_API.Chat
 		/// <returns>Whether message was updated</returns>
 		public bool EditMessageRole(Guid id, ChatMessageRole role)
 		{
-			ChatMessage msg = _messages.FirstOrDefault(x => x.Id == id);
+			ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == id);
 			
 			if (msg != null)
 			{
@@ -278,7 +283,7 @@ namespace OpenAI_API.Chat
 				Messages = _messages.ToList()
 			};
 
-			ChatResult res = await _endpoint.CreateChatCompletionAsync(req);
+			ChatResult res = await _endpoint.CreateChatCompletionAsync(req, Auth);
 			MostRecentApiResult = res;
 
 			if (res.Choices.Count > 0)
@@ -301,7 +306,7 @@ namespace OpenAI_API.Chat
 				Messages = _messages.ToList()
 			};
 
-			ChatResult res = await _endpoint.CreateChatCompletionAsync(req);
+			ChatResult res = await _endpoint.CreateChatCompletionAsync(req, Auth);
 			MostRecentApiResult = res;
 
 			if (res.Choices.Count > 0)
@@ -332,7 +337,7 @@ namespace OpenAI_API.Chat
 				Messages = _messages.ToList()
 			};
 
-			ChatResult res = await _endpoint.CreateChatCompletionAsync(req);
+			ChatResult res = await _endpoint.CreateChatCompletionAsync(req, Auth);
 			MostRecentApiResult = res;
 
 			if (res.Choices.Count > 0)
@@ -447,8 +452,8 @@ namespace OpenAI_API.Chat
             
 			StringBuilder responseStringBuilder = new StringBuilder();
 			ChatMessageRole responseRole = null;
-			string currentFunction = "";
-			Dictionary<string, StringBuilder> functionCalls = new Dictionary<string, StringBuilder>();
+			string? currentFunction = "";
+			Dictionary<string?, StringBuilder> functionCalls = new Dictionary<string?, StringBuilder>();
 			bool typeResolved = false;
 
 			await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))

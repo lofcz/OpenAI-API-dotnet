@@ -14,11 +14,13 @@ namespace OpenAI_API.Chat
         /// </summary>
         [JsonProperty("name", Required = Required.Always)]
         public string Name { get; set; }
+        
         /// <summary>
         /// JSON of the function output
         /// </summary>
         [JsonProperty("content", Required = Required.Always)]
         public string Content { get; set; }
+        
         /// <summary>
         /// A passtrough arbitrary data
         /// </summary>
@@ -137,9 +139,9 @@ namespace OpenAI_API.Chat
         /// <param name="parameters"></param>
         public Function(string name, string description, object parameters)
         {
-            this.Name = name;
-            this.Description = description;
-            this.Parameters = parameters;
+            Name = name;
+            Description = description;
+            Parameters = parameters;
         }
         /// <summary>
         /// Creates an empty Function object.

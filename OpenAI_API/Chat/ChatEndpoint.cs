@@ -39,14 +39,25 @@ namespace OpenAI_API.Chat
 			return new Conversation(this, defaultChatRequestArgs: defaultChatRequestArgs ?? DefaultChatRequestArgs);
 		}
 
+		public Task<ChatResult> CreateChatCompletionAsync(ChatRequest request)
+		{
+			throw new NotImplementedException();
+		}
+
+		public Task<ChatResult> CreateChatCompletionAsync(ChatRequest request, int numOutputs = 5)
+		{
+			throw new NotImplementedException();
+		}
+
 		#region Non-streaming
 
 		/// <summary>
 		/// Ask the API to complete the request using the specified parameters. This is non-streaming, so it will wait until the API returns the full result. Any non-specified parameters will fall back to default values specified in <see cref="DefaultChatRequestArgs"/> if present.
 		/// </summary>
 		/// <param name="request">The request to send to the API.</param>
+		/// <param name="auth">If not null, overrides the default auth.</param>
 		/// <returns>Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices"/> property for the results.</returns>
-		public async Task<ChatResult> CreateChatCompletionAsync(ChatRequest request)
+		public async Task<ChatResult> CreateChatCompletionAsync(ChatRequest request, APIAuthentication? auth)
 		{
 			return await HttpPost<ChatResult>(postData: request);
 		}
@@ -57,10 +68,10 @@ namespace OpenAI_API.Chat
 		/// <param name="request">The request to send to the API.</param>
 		/// <param name="numOutputs">Overrides <see cref="ChatRequest.NumChoicesPerMessage"/> as a convenience.</param>
 		/// <returns>Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices"/> property for the results.</returns>
-		public Task<ChatResult> CreateChatCompletionAsync(ChatRequest request, int numOutputs = 5)
+		public Task<ChatResult> CreateChatCompletionAsync(ChatRequest request, APIAuthentication? auth, int numOutputs = 5)
 		{
 			request.NumChoicesPerMessage = numOutputs;
-			return CreateChatCompletionAsync(request);
+			return CreateChatCompletionAsync(request, auth);
 		}
 
 		/// <summary>

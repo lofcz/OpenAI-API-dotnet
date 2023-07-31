@@ -18,7 +18,7 @@ namespace OpenAI_API.Chat
 		/// The model to use for this request
 		/// </summary>
 		[JsonProperty("model")]
-		public string Model { get; set; } = OpenAI_API.Models.Model.ChatGPTTurbo;
+		public string Model { get; set; } = Models.Model.ChatGPTTurbo;
 
 		/// <summary>
 		/// The messages to send with this Chat Request
@@ -48,22 +48,22 @@ namespace OpenAI_API.Chat
 		/// Specifies where the results should stream and be returned at one time.  Do not set this yourself, use the appropriate methods on <see cref="CompletionEndpoint"/> instead.
 		/// </summary>
 		[JsonProperty("stream")]
-		public bool Stream { get; internal set; } = false;
+		public bool Stream { get; internal set; }
 
 		/// <summary>
 		/// This is only used for serializing the request into JSON, do not use it directly.
 		/// </summary>
 		[JsonProperty("stop")]
-		internal object CompiledStop
+		internal object? CompiledStop
 		{
 			get
 			{
-				if (MultipleStopSequences?.Length == 1)
-					return StopSequence;
-				else if (MultipleStopSequences?.Length > 0)
-					return MultipleStopSequences;
-				else
-					return null;
+				return MultipleStopSequences?.Length switch
+				{
+					1 => StopSequence,
+					> 0 => MultipleStopSequences,
+					_ => null
+				};
 			}
 		}
 
@@ -71,19 +71,19 @@ namespace OpenAI_API.Chat
 		/// One or more sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence.
 		/// </summary>
 		[JsonIgnore]
-		public string[] MultipleStopSequences { get; set; }
+		public string[]? MultipleStopSequences { get; set; }
 
 		/// <summary>
 		/// The stop sequence where the API will stop generating further tokens. The returned text will not contain the stop sequence.  For convenience, if you are only requesting a single stop sequence, set it here
 		/// </summary>
 		[JsonIgnore]
-		public string StopSequence
+		public string? StopSequence
 		{
 			get => MultipleStopSequences?.FirstOrDefault() ?? null;
 			set
 			{
 				if (value != null)
-					MultipleStopSequences = new string[] { value };
+					MultipleStopSequences = new[] { value };
 			}
 		}
 
@@ -119,7 +119,7 @@ namespace OpenAI_API.Chat
 		/// A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 		/// </summary>
 		[JsonProperty("user")]
-		public string user { get; set; }
+		public string? user { get; set; }
 		
 		/// <summary>
 		/// A list of functions the model may generate JSON inputs for.
@@ -149,23 +149,23 @@ namespace OpenAI_API.Chat
 		/// Create a new chat request using the data from the input chat request.
 		/// </summary>
 		/// <param name="basedOn"></param>
-		public ChatRequest(ChatRequest basedOn)
+		public ChatRequest(ChatRequest? basedOn)
 		{
 			if (basedOn == null)
 				return;
 
-			this.Model = basedOn.Model;
-			this.Messages = basedOn.Messages;
-			this.Temperature = basedOn.Temperature;
-			this.TopP = basedOn.TopP;
-			this.NumChoicesPerMessage = basedOn.NumChoicesPerMessage;
-			this.MultipleStopSequences = basedOn.MultipleStopSequences;
-			this.MaxTokens = basedOn.MaxTokens;
-			this.FrequencyPenalty = basedOn.FrequencyPenalty;
-			this.PresencePenalty = basedOn.PresencePenalty;
-			this.LogitBias = basedOn.LogitBias;
-			this.Functions = basedOn.Functions;
-			this.FunctionCall = basedOn.FunctionCall;
+			Model = basedOn.Model;
+			Messages = basedOn.Messages;
+			Temperature = basedOn.Temperature;
+			TopP = basedOn.TopP;
+			NumChoicesPerMessage = basedOn.NumChoicesPerMessage;
+			MultipleStopSequences = basedOn.MultipleStopSequences;
+			MaxTokens = basedOn.MaxTokens;
+			FrequencyPenalty = basedOn.FrequencyPenalty;
+			PresencePenalty = basedOn.PresencePenalty;
+			LogitBias = basedOn.LogitBias;
+			Functions = basedOn.Functions;
+			FunctionCall = basedOn.FunctionCall;
 		}
 	}
 }

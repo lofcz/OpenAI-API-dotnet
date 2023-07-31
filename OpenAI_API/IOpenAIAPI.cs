@@ -28,7 +28,12 @@ namespace OpenAI_API
         /// <summary>
         /// The API authentication information to use for API calls
         /// </summary>
-        APIAuthentication Auth { get; set; }
+        APIAuthentication? Auth { get; }
+
+        /// <summary>
+        /// Sets the default API authentication information to use for API calls
+        /// </summary>
+        void SetAuth(APIAuthentication auth);
 
         /// <summary>
         /// Text generation in the form of chat messages. This interacts with the ChatGPT API.
