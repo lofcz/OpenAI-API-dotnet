@@ -78,76 +78,60 @@ namespace OpenAI_API.Chat
         /// </summary>
         [JsonProperty("name", Required = Required.Always)]
         public string Name { get; set; }
+        
         /// <summary>
         /// The description of what the function does.
         /// </summary>
         [JsonProperty("description", Required = Required.Default)]
         public string Description { get; set; }
-
-        private JObject _parameters;
-        /// <summary>
-        /// The parameters that the function accepts, described as a JSON Schema object.
-        /// The JSON Schema defines the type and structure of the data. It should be compatible with the JSON Schema standard.
-        /// This property can accept values in various forms which can be serialized into a JSON format:
-        /// 1. A JSON string, which will be parsed into a JObject.
-        /// 2. A JObject, which represents a JSON object, is assigned directly.
-        /// 3. A Dictionary of string and object, where keys are property names and values are their respective data.
-        /// 4. An anonymous object, which gets converted into a JObject.
-        /// 5. Any other object that can be serialized into a JSON format, which will be converted into a JObject.
-        /// If the value cannot be converted into a JSON object, an exception will be thrown.
-        /// Refer to the <see href="https://platform.openai.com/docs/guides/gpt/function-calling">guide</see> for examples and the 
-        /// <see href="https://json-schema.org/understanding-json-schema/">JSON Schema reference</see> for detailed documentation about the format.
-        /// </summary>
+        
         [JsonProperty("parameters", Required = Required.Default)]
-        public object Parameters
+        public JObject Parameters { get; set; }
+        
+        private static readonly JsonSerializerSettings serializerSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+        
+        /// <summary>
+        /// Create a function which can be applied to 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="description"></param>
+        /// <param name="parameters">JSON serialized object, will be deserialized into <see cref="JObject"/> </param>
+        public Function(string name, string description, string parameters)
         {
-            get => _parameters;
-            set
-            {
-                try
-                {
-                    switch (value)
-                    {
-                        case string jsonStringValue:
-                            _parameters = JObject.Parse(jsonStringValue);
-                            break;
-                        case JObject jObjectValue:
-                            _parameters = jObjectValue;
-                            break;
-                        default:
-                        {
-                            var settings = new JsonSerializerSettings
-                            {
-                                NullValueHandling = NullValueHandling.Ignore
-                            };
-                            _parameters = JObject.FromObject(value, JsonSerializer.Create(settings));
-                            break;
-                        }
-                    }
-                }
-                catch (JsonException e)
-                {
-                    throw new ArgumentException("Could not convert the provided object into a JSON object. Make sure that the object is serializable and its structure matches the required schema.", e);
-                }
-            }
+            Name = name;
+            Description = description;
+            Parameters = JObject.Parse(parameters);
         }
+        
         /// <summary>
         /// Create a function which can be applied to 
         /// </summary>
         /// <param name="name"></param>
         /// <param name="description"></param>
         /// <param name="parameters"></param>
-        public Function(string name, string description, object parameters)
+        public Function(string name, string description, JObject parameters)
         {
             Name = name;
             Description = description;
             Parameters = parameters;
         }
+        
+        /// <summary>
+        /// Create a function which can be applied to 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="description"></param>
+        /// <param name="parameters">A JSON-serializable object</param>
+        public Function(string name, string description, object parameters)
+        {
+            Name = name;
+            Description = description;
+            Parameters = JObject.FromObject(parameters, JsonSerializer.Create(serializerSettings));
+        }
+        
         /// <summary>
         /// Creates an empty Function object.
         /// </summary>
-        public Function()
-        {
-        }
+        private Function() {}
     }
 }
