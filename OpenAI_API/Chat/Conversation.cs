@@ -37,7 +37,7 @@ namespace OpenAI_API.Chat
 		/// <summary>
 		/// If not null, this func is called after a function is resolved
 		/// </summary>
-		public Func<FunctionResult, ChatMessage, Task> OnAfterFunctionCall { get; set; }
+		public Func<FunctionResult, ChatMessage, Task>? OnAfterFunctionCall { get; set; }
 		
 		/// <summary>
 		/// After calling <see cref="GetResponseFromChatbotAsync"/>, this contains the full response object which can contain useful metadata like token usages, <see cref="ChatChoice.FinishReason"/>, etc.  This is overwritten with every call to <see cref="GetResponseFromChatbotAsync"/> and only contains the most recent result.
@@ -316,7 +316,7 @@ namespace OpenAI_API.Chat
 				
 				if (res.Choices[0].Message.FunctionCall != null && res.Choices[0].Message.FunctionCall.Name.Length > 0 && res.Choices[0].Message.FunctionCall.Name != "none" && res.Choices[0].Message.FunctionCall.Name != "auto")
 				{
-					FunctionResult result = await functionCallHandler.Invoke(new List<FunctionCall> { newMsg.FunctionCall });
+					FunctionResult? result = await functionCallHandler.Invoke(new List<FunctionCall> { newMsg.FunctionCall });
 					return new ChatResponse { Kind = ChatResponseKinds.Function, FunctionResult = result };
 				}
                 
@@ -551,7 +551,13 @@ namespace OpenAI_API.Chat
 
 					if (fr != null)
 					{
-						ChatMessage msg = new ChatMessage(responseRole, fr.Content, Guid.NewGuid()) { Name = fr.Name };
+						ChatMessage msg = new ChatMessage(ChatMessageRole.Function, fr.Content, Guid.NewGuid()) { Name = fr.Name };
+
+						if (!fr.AllowFunctionCalls)
+						{
+							msg.FunctionCallMode = FunctionCallModes.None;
+						}
+						
 						AppendMessage(msg);
 
 						if (OnAfterFunctionCall != null)
