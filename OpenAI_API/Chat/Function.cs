@@ -27,12 +27,6 @@ namespace OpenAI_API.Chat
         [JsonIgnore]
         public object? Data { get; set; }
 
-        /// <summary>
-        /// Allow further function calls
-        /// </summary>
-        [JsonIgnore]
-        public bool AllowFunctionCalls { get; set; } = true;
-
         public FunctionResult()
         {
             
