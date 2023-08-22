@@ -458,6 +458,12 @@ namespace OpenAI_API.Chat
 
 			await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
 			{
+				if (res.Choices is null)
+				{
+					MostRecentApiResult = res;
+					continue;
+				}
+				
 				if (!res.Choices.Any())
 				{
 					MostRecentApiResult = res;
