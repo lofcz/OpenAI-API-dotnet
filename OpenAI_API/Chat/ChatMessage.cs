@@ -52,10 +52,10 @@ namespace OpenAI_API.Chat
 		/// The role of the message, which can be "system", "assistant", "user" or "function"
 		/// </summary>
 		[JsonIgnore]
-		public ChatMessageRole Role
+		public ChatMessageRole? Role
 		{
 			get => ChatMessageRole.FromString(rawRole);
-			set => rawRole = value.ToString();
+			set => rawRole = value?.ToString();
 		}
 
 		/// <summary>

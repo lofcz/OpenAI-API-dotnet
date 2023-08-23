@@ -35,7 +35,7 @@ namespace OpenAI_API
 		/// <summary>
 		/// The internal reference to the API, mostly used for authentication
 		/// </summary>
-		private readonly OpenAIAPI _Api;
+		protected readonly OpenAIAPI api;
 
 		/// <summary>
 		/// Constructor of the api endpoint base, to be called from the contructor of any devived classes.  Rather than instantiating any endpoint yourself, access it through an instance of <see cref="OpenAIAPI"/>.
@@ -43,7 +43,7 @@ namespace OpenAI_API
 		/// <param name="api"></param>
 		internal EndpointBase(OpenAIAPI api)
 		{
-			_Api = api;
+			this.api = api;
 		}
 
 		/// <summary>
@@ -54,7 +54,7 @@ namespace OpenAI_API
 		/// <summary>
 		/// Gets the URL of the endpoint, based on the base OpenAI API URL followed by the endpoint name.  For example "https://api.openai.com/v1/completions"
 		/// </summary>
-		protected string Url => string.Format(_Api.ApiUrlFormat, _Api.ApiVersion, Endpoint);
+		protected string Url => string.Format(api.ApiUrlFormat, api.ApiVersion, Endpoint);
         
 		/// <summary>
 		/// Gets an HTTPClient with the appropriate authorization and other headers set
@@ -63,7 +63,7 @@ namespace OpenAI_API
 		/// <exception cref="AuthenticationException">Thrown if there is no valid authentication.  Please refer to <see href="https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication"/> for details.</exception>
 		private HttpClient GetClient()
 		{
-			if (_Api.Auth?.ApiKey is null)
+			if (api.Auth?.ApiKey is null)
 			{
 				throw new AuthenticationException("You must provide API authentication.  Please refer to https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication for details.");
 			}
@@ -73,6 +73,8 @@ namespace OpenAI_API
 
 		internal static void UpdateDefaultAuth(APIAuthentication auth)
 		{
+			EndpointClient.DefaultRequestHeaders.Clear();
+
 			EndpointClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth.ApiKey);
 			EndpointClient.DefaultRequestHeaders.Add("api-key", auth.ApiKey);
 			EndpointClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
@@ -90,10 +92,11 @@ namespace OpenAI_API
 		/// <param name="response">The http response object itself</param>
 		/// <param name="name">The name of the endpoint being used</param>
 		/// <param name="description">Additional details about the endpoint of this request (optional)</param>
+		/// <param name="input">Additional details about the endpoint of this request (optional)</param>
 		/// <returns>A human-readable string error message.</returns>
-		private static string GetErrorMessage(string resultAsString, HttpResponseMessage response, string name, string description = "")
+		private static string GetErrorMessage(string resultAsString, HttpResponseMessage response, string name, string description, HttpRequestMessage input)
 		{
-			return $"Error at {name} ({description}) with HTTP status code: {response.StatusCode}. Content: {resultAsString ?? "<no content>"}";
+			return $"Error at {name} ({description}) with HTTP status code: {response.StatusCode}. Content: {resultAsString ?? "<no content>"}. Request: {JsonConvert.SerializeObject(input.Headers)}";
 		}
         
 		/// <summary>
@@ -106,7 +109,7 @@ namespace OpenAI_API
 		/// <param name="auth">(optional) Auth to override default settings.</param>
 		/// <returns>The HttpResponseMessage of the response, which is confirmed to be successful.</returns>
 		/// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned</exception>
-		private async Task<HttpResponseMessage> HttpRequestRaw(string? url = null, HttpMethod? verb = null, object? postData = null, bool streaming = false, APIAuthentication? auth = null)
+		private async Task<HttpResponseMessage> HttpRequestRaw(string? url = null, HttpMethod? verb = null, object? postData = null, bool streaming = false)
 		{
             url ??= Url;
             verb ??= HttpMethod.Get;
@@ -114,17 +117,22 @@ namespace OpenAI_API
 			HttpClient client = GetClient();
 			using HttpRequestMessage req = new HttpRequestMessage(verb, url);
 
-			if (auth != null)
+			if (api.Auth is not null)
 			{
-				req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth.ApiKey);
-				req.Headers.Add("api-key", auth.ApiKey);
+				req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", api.Auth.ApiKey);
+				req.Headers.Add("api-key", api.Auth.ApiKey);
 				req.Headers.Add("User-Agent", UserAgent);
-			
-				if (!string.IsNullOrEmpty(auth.OpenAIOrganization))
+		
+				if (!string.IsNullOrEmpty(api.Auth.OpenAIOrganization))
 				{
-					req.Headers.Add("OpenAI-Organization", auth.OpenAIOrganization);
-				}
+					req.Headers.Add("OpenAI-Organization", api.Auth.OpenAIOrganization);
+				}	
 			}
+			else
+			{
+				throw new AuthenticationException("OpenAI rejected your authorization, most likely due to an invalid API Key.  Try checking your API Key and see https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication for guidance.");
+			}
+			
 
 			if (postData != null)
 			{
@@ -161,8 +169,8 @@ namespace OpenAI_API
 			throw response.StatusCode switch
 			{
 				System.Net.HttpStatusCode.Unauthorized => new AuthenticationException("OpenAI rejected your authorization, most likely due to an invalid API Key.  Try checking your API Key and see https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication for guidance.  Full API response follows: " + resultAsString),
-				System.Net.HttpStatusCode.InternalServerError => new HttpRequestException("OpenAI had an internal server error, which can happen occasionally.  Please retry your request.  " + GetErrorMessage(resultAsString, response, Endpoint, url)),
-				_ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint, url))
+				System.Net.HttpStatusCode.InternalServerError => new HttpRequestException("OpenAI had an internal server error, which can happen occasionally.  Please retry your request.  " + GetErrorMessage(resultAsString, response, Endpoint, url, req)),
+				_ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint, url, req))
 			};
 		}
 
@@ -172,7 +180,7 @@ namespace OpenAI_API
 		/// <param name="url">(optional) If provided, overrides the url endpoint for this request.  If omitted, then <see cref="Url"/> will be used.</param>
 		/// <returns>The text string of the response, which is confirmed to be successful.</returns>
 		/// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned</exception>
-		internal async Task<string> HttpGetContent<T>(string url = null)
+		internal async Task<string> HttpGetContent(string? url = null)
 		{
 			using HttpResponseMessage response = await HttpRequestRaw(url);
 			return await response.Content.ReadAsStringAsync();
@@ -189,9 +197,9 @@ namespace OpenAI_API
 		/// <param name="auth">(optional) Auth that overrides the default auth.</param>
 		/// <returns>An awaitable Task with the parsed result of type <typeparamref name="T"/></returns>
 		/// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned or if the result couldn't be parsed.</exception>
-		private async Task<T?> HttpRequest<T>(string? url = null, HttpMethod? verb = null, object? postData = null, APIAuthentication? auth = null) where T : ApiResultBase
+		private async Task<T?> HttpRequest<T>(string? url = null, HttpMethod? verb = null, object? postData = null) where T : ApiResultBase
 		{
-			using HttpResponseMessage response = await HttpRequestRaw(url, verb, postData, false, auth);
+			using HttpResponseMessage response = await HttpRequestRaw(url, verb, postData);
 			string resultAsString = await response.Content.ReadAsStringAsync();
 
 			T? res = JsonConvert.DeserializeObject<T>(resultAsString);
@@ -204,6 +212,7 @@ namespace OpenAI_API
 					res.RequestId = response.Headers.GetValues("X-Request-ID").FirstOrDefault();
 					res.ProcessingTime = TimeSpan.FromMilliseconds(int.Parse(response.Headers.GetValues("Openai-Processing-Ms").First()));
 					res.OpenaiVersion = response.Headers.GetValues("Openai-Version").FirstOrDefault();
+					
 					if (res.Model != null && string.IsNullOrEmpty(res.Model))
 					{
 						res.Model = response.Headers.GetValues("Openai-Model").FirstOrDefault();
@@ -225,9 +234,9 @@ namespace OpenAI_API
 		/// <param name="url">(optional) If provided, overrides the url endpoint for this request.  If omitted, then <see cref="Url"/> will be used.</param>
 		/// <returns>An awaitable Task with the parsed result of type <typeparamref name="T"/></returns>
 		/// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned or if the result couldn't be parsed.</exception>
-		internal async Task<T?> HttpGet<T>(string? url = null, APIAuthentication? auth = null) where T : ApiResultBase
+		internal async Task<T?> HttpGet<T>(string? url = null) where T : ApiResultBase
 		{
-			return await HttpRequest<T>(url, HttpMethod.Get, null, auth);
+			return await HttpRequest<T>(url, HttpMethod.Get);
 		}
 
 		/// <summary>
@@ -239,9 +248,9 @@ namespace OpenAI_API
 		/// <param name="auth">(optional) Auth that overrides the default auth.</param>
 		/// <returns>An awaitable Task with the parsed result of type <typeparamref name="T"/></returns>
 		/// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned or if the result couldn't be parsed.</exception>
-		internal async Task<T?> HttpPost<T>(string? url = null, object? postData = null, APIAuthentication? auth = null) where T : ApiResultBase
+		internal async Task<T?> HttpPost<T>(string? url = null, object? postData = null) where T : ApiResultBase
 		{
-			return await HttpRequest<T>(url, HttpMethod.Post, postData, auth);
+			return await HttpRequest<T>(url, HttpMethod.Post, postData);
 		}
 
 		/// <summary>
@@ -253,9 +262,9 @@ namespace OpenAI_API
 		/// <param name="auth">(optional) Auth that overrides the default auth.</param>
 		/// <returns>An awaitable Task with the parsed result of type <typeparamref name="T"/></returns>
 		/// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned or if the result couldn't be parsed.</exception>
-		internal async Task<T?> HttpDelete<T>(string? url = null, object? postData = null, APIAuthentication? auth = null) where T : ApiResultBase
+		internal async Task<T?> HttpDelete<T>(string? url = null, object? postData = null) where T : ApiResultBase
 		{
-			return await HttpRequest<T>(url, HttpMethod.Delete, postData, auth);
+			return await HttpRequest<T>(url, HttpMethod.Delete, postData);
 		}
 
 
@@ -268,9 +277,9 @@ namespace OpenAI_API
 		/// <param name="auth">(optional) Auth that overrides the default auth.</param>
 		/// <returns>An awaitable Task with the parsed result of type <typeparamref name="T"/></returns>
 		/// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned or if the result couldn't be parsed.</exception>
-		internal async Task<T?> HttpPut<T>(string? url = null, object? postData = null, APIAuthentication? auth = null) where T : ApiResultBase
+		internal async Task<T?> HttpPut<T>(string? url = null, object? postData = null) where T : ApiResultBase
 		{
-			return await HttpRequest<T>(url, HttpMethod.Put, postData, auth);
+			return await HttpRequest<T>(url, HttpMethod.Put, postData);
 		}
         
 		/// <summary>
@@ -282,9 +291,9 @@ namespace OpenAI_API
 		/// <param name="auth">(optional) Auth that overrides the default auth.</param>
 		/// <returns>The HttpResponseMessage of the response, which is confirmed to be successful.</returns>
 		/// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned</exception>
-		protected async IAsyncEnumerable<T> HttpStreamingRequest<T>(string? url = null, HttpMethod? verb = null, object? postData = null, APIAuthentication? auth = null) where T : ApiResultBase
+		protected async IAsyncEnumerable<T> HttpStreamingRequest<T>(string? url = null, HttpMethod? verb = null, object? postData = null) where T : ApiResultBase
 		{
-			using HttpResponseMessage response = await HttpRequestRaw(url, verb, postData, true, auth);
+			using HttpResponseMessage response = await HttpRequestRaw(url, verb, postData, true);
 
 			string? organization = null;
 			string? requestId = null;
@@ -307,10 +316,13 @@ namespace OpenAI_API
 
 			await using Stream stream = await response.Content.ReadAsStreamAsync();
 			using StreamReader reader = new StreamReader(stream);
+			
 			while (await reader.ReadLineAsync() is { } line)
 			{
 				if (line.StartsWith("data:"))
+				{
 					line = line["data:".Length..];
+				}
 
 				line = line.TrimStart();
 

@@ -276,7 +276,7 @@ namespace OpenAI_API.Chat
 		/// Calls the API to get a response, which is appended to the current chat's <see cref="Messages"/> as an <see cref="ChatMessageRole.Assistant"/> <see cref="ChatMessage"/>.
 		/// </summary>
 		/// <returns>The string of the response from the chatbot API</returns>
-		public async Task<string> GetResponseFromChatbotAsync()
+		public async Task<string?> GetResponseFromChatbotAsync()
 		{
 			ChatRequest req = new ChatRequest(RequestParameters)
 			{
@@ -286,6 +286,11 @@ namespace OpenAI_API.Chat
 			ChatResult res = await _endpoint.CreateChatCompletionAsync(req, Auth);
 			MostRecentApiResult = res;
 
+			if (res.Choices is null)
+			{
+				return null;
+			}
+            
 			if (res.Choices.Count > 0)
 			{
 				ChatMessage newMsg = res.Choices[0].Message;
@@ -309,12 +314,23 @@ namespace OpenAI_API.Chat
 			ChatResult res = await _endpoint.CreateChatCompletionAsync(req, Auth);
 			MostRecentApiResult = res;
 
+			if (res.Choices is null)
+			{
+				return null;
+			}
+			
 			if (res.Choices.Count > 0)
 			{
-				ChatMessage newMsg = res.Choices[0].Message;
+				ChatMessage? newMsg = res.Choices[0].Message;
+
+				if (newMsg is null)
+				{
+					return null;
+				}
+				
 				AppendMessage(newMsg);
 				
-				if (res.Choices[0].Message.FunctionCall != null && res.Choices[0].Message.FunctionCall.Name.Length > 0 && res.Choices[0].Message.FunctionCall.Name != "none" && res.Choices[0].Message.FunctionCall.Name != "auto")
+				if (newMsg.FunctionCall != null && newMsg.FunctionCall.Name.Length > 0 && newMsg.FunctionCall.Name != "none" && newMsg.FunctionCall.Name != "auto")
 				{
 					FunctionResult result = await functionCallHandler.Invoke(new List<FunctionCall> { newMsg.FunctionCall });
 					return new ChatResponse { Kind = ChatResponseKinds.Function, FunctionResult = result };
@@ -340,6 +356,11 @@ namespace OpenAI_API.Chat
 			ChatResult res = await _endpoint.CreateChatCompletionAsync(req, Auth);
 			MostRecentApiResult = res;
 
+			if (res.Choices is null)
+			{
+				return null;
+			}
+			
 			if (res.Choices.Count > 0)
 			{
 				ChatMessage newMsg = res.Choices[0].Message;
@@ -402,13 +423,21 @@ namespace OpenAI_API.Chat
 			};
 
 			StringBuilder responseStringBuilder = new StringBuilder();
-			ChatMessageRole responseRole = null;
+			ChatMessageRole? responseRole = null;
 
 			await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
 			{
+				if (res.Choices is null)
+				{
+					yield break;
+				}
+
+				if (res.Choices.Count <= 0)
+				{
+					yield break;
+				}
 				
-				
-				if (res.Choices.FirstOrDefault()?.Delta is { } delta)
+				if (res.Choices[0].Delta is { } delta)
 				{
 					if (responseRole == null && delta.Role != null)
 					{

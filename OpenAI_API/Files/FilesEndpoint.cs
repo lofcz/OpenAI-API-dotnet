@@ -20,7 +20,7 @@ namespace OpenAI_API.Files
 		/// <summary>
 		/// The name of the endpoint, which is the final path segment in the API URL.  For example, "files".
 		/// </summary>
-		protected override string Endpoint { get { return "files"; } }
+		protected override string Endpoint => "files";
 
 		/// <summary>
 		/// Get the list of all files
@@ -50,7 +50,7 @@ namespace OpenAI_API.Files
 		/// <returns></returns>
 		public async Task<string> GetFileContentAsStringAsync(string fileId)
 		{
-			return await HttpGetContent<File>($"{Url}/{fileId}/content");
+			return await HttpGetContent($"{Url}/{fileId}/content");
 		}
 
 		/// <summary>
@@ -71,10 +71,10 @@ namespace OpenAI_API.Files
 		/// <param name="purpose">The intendend purpose of the uploaded documents. Use "fine-tune" for Fine-tuning. This allows us to validate the format of the uploaded file.</param>
 		public async Task<File> UploadFileAsync(string filePath, string purpose = "fine-tune")
 		{
-			var content = new MultipartFormDataContent
+			MultipartFormDataContent content = new MultipartFormDataContent
 			{
 				{ new StringContent(purpose), "purpose" },
-				{ new ByteArrayContent(System.IO.File.ReadAllBytes(filePath)), "file", Path.GetFileName(filePath) }
+				{ new ByteArrayContent(await System.IO.File.ReadAllBytesAsync(filePath)), "file", Path.GetFileName(filePath) }
 			};
 
 			return await HttpPost<File>(Url, content);

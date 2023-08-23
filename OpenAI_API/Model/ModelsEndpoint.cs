@@ -13,7 +13,7 @@ namespace OpenAI_API.Models
 		/// <summary>
 		/// The name of the endpoint, which is the final path segment in the API URL.  For example, "models".
 		/// </summary>
-		protected override string Endpoint { get { return "models"; } }
+		protected override string Endpoint => "models";
 
 		/// <summary>
 		/// Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of <see cref="OpenAIAPI"/> as <see cref="OpenAIAPI.Models"/>.
@@ -28,8 +28,8 @@ namespace OpenAI_API.Models
 		/// <returns>Asynchronously returns the <see cref="Model"/> with all available properties</returns>
 		public async Task<Model> RetrieveModelDetailsAsync(string id)
 		{
-			string resultAsString = await HttpGetContent<JsonHelperRoot>($"{Url}/{id}");
-			var model = JsonConvert.DeserializeObject<Model>(resultAsString);
+			string resultAsString = await HttpGetContent($"{Url}/{id}");
+			Model? model = JsonConvert.DeserializeObject<Model>(resultAsString);
 			return model;
 		}
 
@@ -39,7 +39,7 @@ namespace OpenAI_API.Models
 		/// <returns>Asynchronously returns the list of all <see cref="Model"/>s</returns>
 		public async Task<List<Model>> GetModelsAsync()
 		{
-			return (await HttpGet<JsonHelperRoot>()).data;
+			return (await HttpGet<JsonHelperRoot>())?.data;
 		}
 
 		/// <summary>
