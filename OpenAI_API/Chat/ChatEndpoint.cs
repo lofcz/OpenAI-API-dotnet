@@ -21,7 +21,7 @@ namespace OpenAI_API.Chat
 		/// <summary>
 		/// The name of the endpoint, which is the final path segment in the API URL.  For example, "completions".
 		/// </summary>
-		protected override string Endpoint { get { return "chat/completions"; } }
+		protected override string Endpoint => "chat/completions";
 
 		/// <summary>
 		/// Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of <see cref="OpenAIAPI"/> as <see cref="OpenAIAPI.Completions"/>.
@@ -57,9 +57,16 @@ namespace OpenAI_API.Chat
 		/// <param name="request">The request to send to the API.</param>
 		/// <param name="auth">If not null, overrides the default auth.</param>
 		/// <returns>Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices"/> property for the results.</returns>
-		public async Task<ChatResult> CreateChatCompletionAsync(ChatRequest request, APIAuthentication? auth)
+		public async Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request, APIAuthentication? auth)
 		{
-			return await HttpPost<ChatResult>(postData: request);
+			ChatResult result = await HttpPost<ChatResult>(postData: request);
+			
+			if (Api.ChatRequestInterceptor is not null)
+			{
+				await Api.ChatRequestInterceptor.Invoke(request, result);
+			}
+
+			return result;
 		}
 
 		/// <summary>
@@ -68,7 +75,7 @@ namespace OpenAI_API.Chat
 		/// <param name="request">The request to send to the API.</param>
 		/// <param name="numOutputs">Overrides <see cref="ChatRequest.NumChoicesPerMessage"/> as a convenience.</param>
 		/// <returns>Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices"/> property for the results.</returns>
-		public Task<ChatResult> CreateChatCompletionAsync(ChatRequest request, APIAuthentication? auth, int numOutputs = 5)
+		public Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request, APIAuthentication? auth, int numOutputs = 5)
 		{
 			request.NumChoicesPerMessage = numOutputs;
 			return CreateChatCompletionAsync(request, auth);
@@ -150,7 +157,7 @@ namespace OpenAI_API.Chat
 		{
 			int index = 0;
 
-			await foreach (var res in StreamChatEnumerableAsync(request))
+			await foreach (ChatResult res in StreamChatEnumerableAsync(request))
 			{
 				resultHandler(index++, res);
 			}
@@ -164,7 +171,7 @@ namespace OpenAI_API.Chat
 		/// <param name="resultHandler">An action to be called as each new result arrives.</param>
 		public async Task StreamChatAsync(ChatRequest request, Action<ChatResult> resultHandler)
 		{
-			await foreach (var res in StreamChatEnumerableAsync(request))
+			await foreach (ChatResult res in StreamChatEnumerableAsync(request))
 			{
 				resultHandler(res);
 			}

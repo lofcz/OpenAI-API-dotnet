@@ -81,7 +81,7 @@ namespace OpenAI_API.Models
 		///	</param>
 		public Model(string name)
 		{
-			this.ModelID = name;
+			ModelID = name;
 		}
 
 		/// <summary>
@@ -96,8 +96,7 @@ namespace OpenAI_API.Models
 		/// The default model to use in requests if no other model is specified.
 		/// </summary>
 		public static Model DefaultModel { get; set; } = DavinciText;
-
-
+		
 		/// <summary>
 		/// Capable of very simple tasks, usually the fastest model in the GPT-3 series, and lowest cost
 		/// </summary>
@@ -119,6 +118,11 @@ namespace OpenAI_API.Models
 		public static Model DavinciText => new Model("text-davinci-003") { OwnedBy = "openai" };
 
 		/// <summary>
+		/// Similar capabilities to text-davinci-003 but trained with supervised fine-tuning instead of reinforcement learning
+		/// </summary>
+		public static Model DavinciText002 => new Model("text-davinci-002") { OwnedBy = "openai" };
+        
+		/// <summary>
 		/// Almost as capable as Davinci Codex, but slightly faster. This speed advantage may make it preferable for real-time applications.
 		/// </summary>
 		public static Model CushmanCode => new Model("code-cushman-001") { OwnedBy = "openai" };
@@ -128,6 +132,17 @@ namespace OpenAI_API.Models
 		/// </summary>
 		public static Model DavinciCode => new Model("code-davinci-002") { OwnedBy = "openai" };
 
+		/// <summary>
+		/// Similar capabilities as text-davinci-003 but compatible with legacy Completions endpoint and not Chat Completions.
+		/// </summary>
+		public static Model GptTurboInstruct => new Model("gpt-3.5-turbo-instruct") { OwnedBy = "openai" };
+
+		/// <summary>
+		/// Snapshot of gpt-3.5-turbo-instruct from September 14th 2023. Unlike gpt-3.5-turbo-instruct, this model will not receive updates, and will be deprecated 3 months after a new version is released.
+		/// Similar capabilities as text-davinci-003 but compatible with legacy Completions endpoint and not Chat Completions.
+		/// </summary>
+		public static Model GptTurboInstruct0914 => new Model("gpt-3.5-turbo-instruct-0914") { OwnedBy = "openai" };
+		
 		/// <summary>
 		/// OpenAI offers one second-generation embedding model for use with the embeddings API endpoint.
 		/// </summary>

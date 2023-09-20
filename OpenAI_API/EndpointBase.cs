@@ -35,7 +35,7 @@ namespace OpenAI_API
 		/// <summary>
 		/// The internal reference to the API, mostly used for authentication
 		/// </summary>
-		protected readonly OpenAIAPI api;
+		internal OpenAIAPI Api { get; }
 
 		/// <summary>
 		/// Constructor of the api endpoint base, to be called from the contructor of any devived classes.  Rather than instantiating any endpoint yourself, access it through an instance of <see cref="OpenAIAPI"/>.
@@ -43,7 +43,7 @@ namespace OpenAI_API
 		/// <param name="api"></param>
 		internal EndpointBase(OpenAIAPI api)
 		{
-			this.api = api;
+			Api = api;
 		}
 
 		/// <summary>
@@ -54,7 +54,7 @@ namespace OpenAI_API
 		/// <summary>
 		/// Gets the URL of the endpoint, based on the base OpenAI API URL followed by the endpoint name.  For example "https://api.openai.com/v1/completions"
 		/// </summary>
-		protected string Url => string.Format(api.ApiUrlFormat, api.ApiVersion, Endpoint);
+		protected string Url => string.Format(Api.ApiUrlFormat, Api.ApiVersion, Endpoint);
         
 		/// <summary>
 		/// Gets an HTTPClient with the appropriate authorization and other headers set
@@ -63,7 +63,7 @@ namespace OpenAI_API
 		/// <exception cref="AuthenticationException">Thrown if there is no valid authentication.  Please refer to <see href="https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication"/> for details.</exception>
 		private HttpClient GetClient()
 		{
-			if (api.Auth?.ApiKey is null)
+			if (Api.Auth?.ApiKey is null)
 			{
 				throw new AuthenticationException("You must provide API authentication.  Please refer to https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication for details.");
 			}
@@ -117,15 +117,15 @@ namespace OpenAI_API
 			HttpClient client = GetClient();
 			using HttpRequestMessage req = new HttpRequestMessage(verb, url);
 
-			if (api.Auth is not null)
+			if (Api.Auth is not null)
 			{
-				req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", api.Auth.ApiKey);
-				req.Headers.Add("api-key", api.Auth.ApiKey);
+				req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey);
+				req.Headers.Add("api-key", Api.Auth.ApiKey);
 				req.Headers.Add("User-Agent", UserAgent);
 		
-				if (!string.IsNullOrEmpty(api.Auth.OpenAIOrganization))
+				if (!string.IsNullOrEmpty(Api.Auth.OpenAIOrganization))
 				{
-					req.Headers.Add("OpenAI-Organization", api.Auth.OpenAIOrganization);
+					req.Headers.Add("OpenAI-Organization", Api.Auth.OpenAIOrganization);
 				}	
 			}
 			else

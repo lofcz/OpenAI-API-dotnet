@@ -8,6 +8,7 @@ using OpenAI_API.Models;
 using OpenAI_API.Moderation;
 using OpenAI_API.Audio;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace OpenAI_API
 {
@@ -33,6 +34,8 @@ namespace OpenAI_API
 		/// </summary>
 		public APIAuthentication? Auth { get; private set;  }
 
+		public Func<ChatRequest, ChatResult?, Task>? ChatRequestInterceptor { get; set; }
+		
 		/// <summary>
 		/// Sets the API authentication information to use for API calls
 		/// </summary>
@@ -40,7 +43,7 @@ namespace OpenAI_API
 		{
 			Auth = auth;
 		}
-
+		
 		/// <summary>
 		/// Creates a new entry point to the OpenAPI API, handling auth and allowing access to the various API endpoints
 		/// </summary>

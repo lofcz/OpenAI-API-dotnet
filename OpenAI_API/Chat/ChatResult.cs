@@ -82,9 +82,21 @@ namespace OpenAI_API.Chat
 	public class ChatUsage : Usage
 	{
 		/// <summary>
-		/// The number of completion tokens used during the chat interaction
+		/// Number of tokens in the generated completion.
 		/// </summary>
 		[JsonProperty("completion_tokens")]
 		public int CompletionTokens { get; set; }
+		
+		/// <summary>
+		/// Number of tokens in the prompt.
+		/// </summary>
+		[JsonProperty("prompt_tokens")]
+		public int PromptTokens { get; set; }
+		
+		/// <summary>
+		/// Total number of tokens used in the request (prompt + completion).
+		/// </summary>
+		[JsonProperty("total_tokens")]
+		public int TotalTokens { get; set; }
 	}
 }
