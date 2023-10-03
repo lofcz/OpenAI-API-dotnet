@@ -210,7 +210,14 @@ namespace OpenAI_API
 				{
 					res.Organization = response.Headers.GetValues("Openai-Organization").FirstOrDefault();
 					res.RequestId = response.Headers.GetValues("X-Request-ID").FirstOrDefault();
-					res.ProcessingTime = TimeSpan.FromMilliseconds(int.Parse(response.Headers.GetValues("Openai-Processing-Ms").First()));
+
+					string? processing = response.Headers.GetValues("Openai-Processing-Ms").FirstOrDefault();
+
+					if (processing is not null && int.TryParse(processing, out int n))
+					{
+						res.ProcessingTime = TimeSpan.FromMilliseconds(n);	
+					}
+					
 					res.OpenaiVersion = response.Headers.GetValues("Openai-Version").FirstOrDefault();
 					
 					if (res.Model != null && string.IsNullOrEmpty(res.Model))
@@ -305,7 +312,12 @@ namespace OpenAI_API
 			{
 				organization = response.Headers.GetValues("Openai-Organization").FirstOrDefault();
 				requestId = response.Headers.GetValues("X-Request-ID").FirstOrDefault();
-				processingTime = TimeSpan.FromMilliseconds(int.Parse(response.Headers.GetValues("Openai-Processing-Ms").First()));
+				string? processing = response.Headers.GetValues("Openai-Processing-Ms").FirstOrDefault();
+
+				if (processing is not null && int.TryParse(processing, out int n))
+				{
+					processingTime = TimeSpan.FromMilliseconds(n);	
+				}
 				openaiVersion = response.Headers.GetValues("Openai-Version").FirstOrDefault();
 				modelFromHeaders = response.Headers.GetValues("Openai-Model").FirstOrDefault();
 			}

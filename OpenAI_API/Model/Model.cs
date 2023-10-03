@@ -14,7 +14,7 @@ namespace OpenAI_API.Models
 		/// The id/name of the model
 		/// </summary>
 		[JsonProperty("id")]
-		public string ModelID { get; set; }
+		public string? ModelID { get; set; }
 
 		/// <summary>
 		/// The owner of this model.  Generally "openai" is a generic OpenAI model, or the organization if a custom or finetuned model.
@@ -60,7 +60,7 @@ namespace OpenAI_API.Models
 		/// Allows an model to be implicitly cast to the string of its <see cref="ModelID"/>
 		/// </summary>
 		/// <param name="model">The <see cref="Model"/> to cast to a string.</param>
-		public static implicit operator string(Model model)
+		public static implicit operator string?(Model model)
 		{
 			return model?.ModelID;
 		}
@@ -69,7 +69,7 @@ namespace OpenAI_API.Models
 		/// Allows a string to be implicitly cast as an <see cref="Model"/> with that <see cref="ModelID"/>
 		/// </summary>
 		/// <param name="name">The id/<see cref="ModelID"/> to use</param>
-		public static implicit operator Model(string name)
+		public static implicit operator Model(string? name)
 		{
 			return new Model(name);
 		}
@@ -79,7 +79,7 @@ namespace OpenAI_API.Models
 		/// </summary>
 		/// <param name="name">The id/<see cref="ModelID"/> to use.
 		///	</param>
-		public Model(string name)
+		public Model(string? name)
 		{
 			ModelID = name;
 		}

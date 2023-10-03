@@ -26,7 +26,7 @@ namespace OpenAI_API.Models
 		/// </summary>
 		/// <param name="id">The id/name of the model to get more details about</param>
 		/// <returns>Asynchronously returns the <see cref="Model"/> with all available properties</returns>
-		public async Task<Model> RetrieveModelDetailsAsync(string id)
+		public async Task<Model> RetrieveModelDetailsAsync(string? id)
 		{
 			string resultAsString = await HttpGetContent($"{Url}/{id}");
 			Model? model = JsonConvert.DeserializeObject<Model>(resultAsString);
@@ -49,7 +49,7 @@ namespace OpenAI_API.Models
 		/// <param name="auth">Obsolete: IGNORED</param>
 		/// <returns>Asynchronously returns the <see cref="Model"/> with all available properties</returns>
 		[Obsolete("Use the overload without the APIAuthentication parameter instead, as custom auth is no longer used.", false)]
-		public async Task<Model> RetrieveModelDetailsAsync(string id, APIAuthentication auth = null)
+		public async Task<Model> RetrieveModelDetailsAsync(string? id, APIAuthentication auth = null)
 		{
 			return await this.RetrieveModelDetailsAsync(id);
 		}
