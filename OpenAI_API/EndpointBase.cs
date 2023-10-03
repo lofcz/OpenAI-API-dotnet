@@ -208,21 +208,37 @@ namespace OpenAI_API
 			{
 				if (res != null)
 				{
-					res.Organization = response.Headers.GetValues("Openai-Organization").FirstOrDefault();
-					res.RequestId = response.Headers.GetValues("X-Request-ID").FirstOrDefault();
-
-					string? processing = response.Headers.GetValues("Openai-Processing-Ms").FirstOrDefault();
-
-					if (processing is not null && int.TryParse(processing, out int n))
+					if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH))
 					{
-						res.ProcessingTime = TimeSpan.FromMilliseconds(n);	
+						res.Organization = orgH.FirstOrDefault();
 					}
 					
-					res.OpenaiVersion = response.Headers.GetValues("Openai-Version").FirstOrDefault();
+					if (response.Headers.TryGetValues("X-Request-ID", out IEnumerable<string>? xreqId))
+					{
+						res.RequestId = xreqId.FirstOrDefault();
+					}
 					
+					if (response.Headers.TryGetValues("Openai-Processing-Ms", out IEnumerable<string>? pms))
+					{
+						string? processing = pms.FirstOrDefault();
+
+						if (processing is not null && int.TryParse(processing, out int n))
+						{
+							res.ProcessingTime = TimeSpan.FromMilliseconds(n);	
+						}
+					}
+					
+					if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav))
+					{
+						res.RequestId = oav.FirstOrDefault();
+					}
+				
 					if (res.Model != null && string.IsNullOrEmpty(res.Model))
 					{
-						res.Model = response.Headers.GetValues("Openai-Model").FirstOrDefault();
+						if (response.Headers.TryGetValues("Openai-Model", out IEnumerable<string>? omd))
+						{
+							res.Model = omd.FirstOrDefault();
+						}
 					}
 				}
 			}
@@ -310,16 +326,35 @@ namespace OpenAI_API
 
 			try
 			{
-				organization = response.Headers.GetValues("Openai-Organization").FirstOrDefault();
-				requestId = response.Headers.GetValues("X-Request-ID").FirstOrDefault();
-				string? processing = response.Headers.GetValues("Openai-Processing-Ms").FirstOrDefault();
-
-				if (processing is not null && int.TryParse(processing, out int n))
+				if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH))
 				{
-					processingTime = TimeSpan.FromMilliseconds(n);	
+					organization = orgH.FirstOrDefault();
 				}
-				openaiVersion = response.Headers.GetValues("Openai-Version").FirstOrDefault();
-				modelFromHeaders = response.Headers.GetValues("Openai-Model").FirstOrDefault();
+					
+				if (response.Headers.TryGetValues("X-Request-ID", out IEnumerable<string>? xreqId))
+				{
+					requestId = xreqId.FirstOrDefault();
+				}
+					
+				if (response.Headers.TryGetValues("Openai-Processing-Ms", out IEnumerable<string>? pms))
+				{
+					string? processing = pms.FirstOrDefault();
+
+					if (processing is not null && int.TryParse(processing, out int n))
+					{
+						processingTime = TimeSpan.FromMilliseconds(n);	
+					}
+				}
+					
+				if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav))
+				{
+					openaiVersion = oav.FirstOrDefault();
+				}
+				
+				if (response.Headers.TryGetValues("Openai-Model", out IEnumerable<string>? omd))
+				{
+					modelFromHeaders = omd.FirstOrDefault();
+				}
 			}
 			catch (Exception e)
 			{

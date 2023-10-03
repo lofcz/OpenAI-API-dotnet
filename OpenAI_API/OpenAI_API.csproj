@@ -16,7 +16,7 @@
 			Added support for GPT4, streaming conversations with ChatGPT, IHttpClientFactory, and various bug fixes.
 		</PackageReleaseNotes>
 		<PackageId>Lofcz.Forks.OpenAI</PackageId>
-		<Version>2.0.9</Version>
+		<Version>2.1.1</Version>
 		<AssemblyVersion>1.9.2.0</AssemblyVersion>
 		<FileVersion>1.9.2.0</FileVersion>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
