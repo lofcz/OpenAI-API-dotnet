@@ -1,5 +1,9 @@
 # C#/.NET SDK for accessing the OpenAI GPT-3 API, ChatGPT, and DALL-E 2
 
+## This library is deprecated, please migrate to https://github.com/lofcz/OpenAiNg, there are only minimal breaking changes.
+
+Old readme:
+
 A simple C# .NET wrapper library to use with OpenAI's GPT-3 API.  More context [on my blog](https://rogerpincombe.com/openai-dotnet-api).  This is an unofficial wrapper library around the OpenAI API.  I am not affiliated with OpenAI and this library is not endorsed or supported by them.
 
 ## Quick Example
